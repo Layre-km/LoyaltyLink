@@ -14,16 +14,255 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customer_stats: {
+        Row: {
+          created_at: string
+          current_tier: Database["public"]["Enums"]["tier_type"]
+          customer_id: string
+          id: string
+          tier_updated_at: string
+          total_visits: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_tier?: Database["public"]["Enums"]["tier_type"]
+          customer_id: string
+          id?: string
+          tier_updated_at?: string
+          total_visits?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_tier?: Database["public"]["Enums"]["tier_type"]
+          customer_id?: string
+          id?: string
+          tier_updated_at?: string
+          total_visits?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_stats_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          full_name: string
+          id: string
+          phone_number: string | null
+          referral_code: string
+          referred_by_code: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone_number?: string | null
+          referral_code: string
+          referred_by_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone_number?: string | null
+          referral_code?: string
+          referred_by_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_granted: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          reward_granted?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          reward_granted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rewards: {
+        Row: {
+          claimed_at: string | null
+          claimed_by_staff_id: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          is_birthday_reward: boolean
+          is_referral_reward: boolean
+          milestone_visits: number | null
+          reward_description: string | null
+          reward_title: string
+          reward_type: string
+          status: Database["public"]["Enums"]["reward_status"]
+          unlocked_at: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by_staff_id?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_birthday_reward?: boolean
+          is_referral_reward?: boolean
+          milestone_visits?: number | null
+          reward_description?: string | null
+          reward_title: string
+          reward_type: string
+          status?: Database["public"]["Enums"]["reward_status"]
+          unlocked_at?: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by_staff_id?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_birthday_reward?: boolean
+          is_referral_reward?: boolean
+          milestone_visits?: number | null
+          reward_description?: string | null
+          reward_title?: string
+          reward_type?: string
+          status?: Database["public"]["Enums"]["reward_status"]
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewards_claimed_by_staff_id_fkey"
+            columns: ["claimed_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rewards_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visits: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          logged_by_staff_id: string | null
+          notes: string | null
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          logged_by_staff_id?: string | null
+          notes?: string | null
+          visit_date?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          logged_by_staff_id?: string | null
+          notes?: string | null
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_logged_by_staff_id_fkey"
+            columns: ["logged_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_milestone_rewards: {
+        Args: { customer_profile_id: string }
+        Returns: undefined
+      }
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      update_customer_tier: {
+        Args: { customer_profile_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      reward_status: "available" | "claimed"
+      tier_type: "bronze" | "silver" | "gold"
+      user_role: "customer" | "staff" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +389,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      reward_status: ["available", "claimed"],
+      tier_type: ["bronze", "silver", "gold"],
+      user_role: ["customer", "staff", "admin"],
+    },
   },
 } as const
