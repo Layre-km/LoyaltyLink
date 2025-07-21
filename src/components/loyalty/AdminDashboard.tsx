@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp } from "lucide-react";
+import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 
 interface CustomerData {
   id: string;
@@ -209,12 +210,17 @@ export const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="customers">
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
+          <div className="space-y-6">
+            {/* Add Customer Form */}
+            <CustomerRegistrationForm onCustomerAdded={loadDemoData} />
+            
+            {/* Customer List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Customer</TableHead>
@@ -252,8 +258,9 @@ export const AdminDashboard = () => {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="settings">
