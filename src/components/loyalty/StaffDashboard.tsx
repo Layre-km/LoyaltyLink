@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Check, Clock, User } from "lucide-react";
+import { Search, Plus, Check, Clock, User, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 
@@ -27,6 +27,15 @@ interface Reward {
   customer_name: string;
 }
 
+interface Order {
+  id: string;
+  table_number: string;
+  items: { id: string; name: string; qty: number; price: number }[];
+  total_amount: number;
+  created_at: string;
+  status: string;
+}
+
 export const StaffDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -34,6 +43,7 @@ export const StaffDashboard = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [pendingRewards, setPendingRewards] = useState<Reward[]>([]);
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
   const { toast } = useToast();
 
   // Demo data since authentication is disabled
@@ -194,6 +204,35 @@ export const StaffDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const loadOrders = async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        console.error(error);
+        toast({ title: 'Failed to load orders', description: error.message, variant: 'destructive' });
+      } else {
+        setOrders((data || []) as any);
+      }
+    };
+    loadOrders();
+
+    const channel = supabase
+      .channel('orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        setOrders(prev => [payload.new as any, ...prev]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+        setOrders(prev => prev.map(o => o.id === (payload.new as any).id ? (payload.new as any) : o));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [toast]);
+
   const getTierColor = (tier: string) => {
     switch (tier) {
       case 'bronze': return 'bronze';
@@ -217,6 +256,41 @@ export const StaffDashboard = () => {
           <p className="text-muted-foreground">
             Use this dashboard to log customer visits and validate reward redemptions.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Incoming Orders - shown first */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5" />
+            Incoming Orders
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {orders.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No orders yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((order) => (
+                <div key={order.id} className="p-4 border rounded-lg flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Table {order.table_number}</Badge>
+                      <span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {(order.items || []).map(i => `${i.name}×${i.qty}`).join(', ')}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-semibold">${order.total_amount.toFixed(2)}</div>
+                    <Badge>{order.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Crown, Gift, Users, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface CustomerStats {
   total_visits: number;
@@ -35,6 +36,7 @@ export const CustomerDashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Demo data since authentication is disabled
   useEffect(() => {
@@ -161,6 +163,23 @@ export const CustomerDashboard = () => {
                 <div className="text-gold font-semibold">MAX TIER REACHED! 🏆</div>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Place Order */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Order from your table</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Ready to order? Choose items from our menu and tell us your table number.
+            </p>
+            <Button onClick={() => navigate('/order')}>
+              Place an Order
+            </Button>
           </div>
         </CardContent>
       </Card>
