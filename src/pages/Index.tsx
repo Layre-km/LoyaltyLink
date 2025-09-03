@@ -1,17 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerDashboard } from "@/components/loyalty/CustomerDashboard";
 import { StaffDashboard } from "@/components/loyalty/StaffDashboard";
 import { AdminDashboard } from "@/components/loyalty/AdminDashboard";
-import { Crown, Users, Settings } from "lucide-react";
+import { Crown, Users, Settings, LogOut } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 type UserRole = 'customer' | 'staff' | 'admin';
 
 const Index = () => {
   const [currentRole, setCurrentRole] = useState<UserRole>('customer');
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const roleButtons = [
     { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
@@ -22,16 +46,24 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-            Digital Loyalty Program
-          </h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Digital Loyalty Program
+            </h1>
+            <Button 
+              variant="outline" 
+              onClick={signOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
           <p className="text-xl text-muted-foreground mb-6">
-            Complete loyalty management system with tier progression and rewards
+            Welcome back, {user.email}
           </p>
           
-          {/* Role Switcher */}
           <div className="flex justify-center gap-4 mb-8 flex-wrap">
             {roleButtons.map(({ role, label, icon: Icon, variant }) => (
               <Button
@@ -47,54 +79,15 @@ const Index = () => {
           </div>
           
           <Badge variant="secondary" className="text-sm">
-            Demo Mode - Authentication disabled for testing
+            Authenticated User Mode
           </Badge>
         </div>
 
-        {/* Dashboard Content */}
         <div className="max-w-7xl mx-auto">
           {currentRole === 'customer' && <CustomerDashboard />}
           {currentRole === 'staff' && <StaffDashboard />}
           {currentRole === 'admin' && <AdminDashboard />}
         </div>
-
-        {/* Features Overview */}
-        <Card className="mt-12 max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-center">System Features</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6 text-sm">
-              <div>
-                <h4 className="font-semibold mb-2">Customer Features</h4>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• View tier status and visit count</li>
-                  <li>• Reward wallet management</li>
-                  <li>• Referral code sharing</li>
-                  <li>• Birthday reward tracking</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Staff Features</h4>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• Manual visit logging</li>
-                  <li>• Customer lookup by email/phone</li>
-                  <li>• Reward validation</li>
-                  <li>• Quick customer stats view</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Admin Features</h4>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• Complete customer management</li>
-                  <li>• System analytics dashboard</li>
-                  <li>• Tier threshold configuration</li>
-                  <li>• Reward system management</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
