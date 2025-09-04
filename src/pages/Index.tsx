@@ -13,7 +13,7 @@ type UserRole = 'customer' | 'staff' | 'admin';
 
 const Index = () => {
   const [currentRole, setCurrentRole] = useState<UserRole>('customer');
-  const { user, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +21,13 @@ const Index = () => {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // Update current role based on user's actual role
+  useEffect(() => {
+    if (profile?.role) {
+      setCurrentRole(profile.role);
+    }
+  }, [profile]);
 
   if (loading) {
     return (
@@ -37,11 +44,19 @@ const Index = () => {
     return null;
   }
 
-  const roleButtons = [
-    { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
-    { role: 'staff' as UserRole, label: 'Staff View', icon: Users, variant: 'secondary' },
-    { role: 'admin' as UserRole, label: 'Admin View', icon: Settings, variant: 'outline' },
-  ];
+  // Only show role buttons for admin/staff users, customers only see their view
+  const roleButtons = profile?.role === 'admin' 
+    ? [
+        { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
+        { role: 'staff' as UserRole, label: 'Staff View', icon: Users, variant: 'secondary' },
+        { role: 'admin' as UserRole, label: 'Admin View', icon: Settings, variant: 'outline' }
+      ]
+    : profile?.role === 'staff'
+    ? [
+        { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
+        { role: 'staff' as UserRole, label: 'Staff View', icon: Users, variant: 'secondary' }
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
@@ -61,25 +76,29 @@ const Index = () => {
             </Button>
           </div>
           <p className="text-xl text-muted-foreground mb-6">
-            Welcome back, {user.email}
+            Welcome back, {profile?.full_name || user?.email}
+            {profile?.role && ` (${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)})`}
           </p>
           
-          <div className="flex justify-center gap-4 mb-8 flex-wrap">
-            {roleButtons.map(({ role, label, icon: Icon, variant }) => (
-              <Button
-                key={role}
-                variant={currentRole === role ? "default" : variant as any}
-                onClick={() => setCurrentRole(role)}
-                className="flex items-center gap-2"
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </Button>
-            ))}
-          </div>
+          {/* Role Switcher - only show for staff/admin */}
+          {roleButtons.length > 0 && (
+            <div className="flex justify-center gap-4 mb-6 flex-wrap">
+              {roleButtons.map(({ role, label, icon: Icon, variant }) => (
+                <Button
+                  key={role}
+                  variant={currentRole === role ? "default" : variant as any}
+                  onClick={() => setCurrentRole(role)}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          )}
           
           <Badge variant="secondary" className="text-sm">
-            Authenticated User Mode
+            {profile?.role ? `${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)} Access` : 'Authenticated User Mode'}
           </Badge>
         </div>
 

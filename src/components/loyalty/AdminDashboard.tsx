@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp } from "lucide-react";
+import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2 } from "lucide-react";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerData {
   id: string;
@@ -30,69 +31,91 @@ interface SystemStats {
 export const AdminDashboard = () => {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Demo data since authentication is disabled
   useEffect(() => {
-    loadDemoData();
+    loadSystemData();
   }, []);
 
-  const loadDemoData = () => {
-    setSystemStats({
-      total_customers: 125,
-      total_visits: 867,
-      rewards_claimed: 234,
-      bronze_tier: 78,
-      silver_tier: 35,
-      gold_tier: 12
-    });
+  const loadSystemData = async () => {
+    setLoading(true);
+    try {
+      // Load system statistics
+      const [profilesData, statsData, rewardsData, visitsData] = await Promise.all([
+        supabase.from('profiles').select('id, role').eq('role', 'customer'),
+        supabase.from('customer_stats').select('current_tier'),
+        supabase.from('rewards').select('id').eq('status', 'claimed'),
+        supabase.from('visits').select('id')
+      ]);
 
-    setCustomers([
-      {
-        id: '1',
-        full_name: 'John Doe',
-        email: 'john.doe@example.com',
-        total_visits: 7,
-        current_tier: 'silver',
-        joined_date: '2024-01-01',
-        last_visit: '2024-01-20'
-      },
-      {
-        id: '2',
-        full_name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        total_visits: 3,
-        current_tier: 'bronze',
-        joined_date: '2024-01-05',
-        last_visit: '2024-01-18'
-      },
-      {
-        id: '3',
-        full_name: 'Bob Johnson',
-        email: 'bob.johnson@example.com',
-        total_visits: 22,
-        current_tier: 'gold',
-        joined_date: '2023-12-15',
-        last_visit: '2024-01-19'
-      },
-      {
-        id: '4',
-        full_name: 'Alice Wilson',
-        email: 'alice.wilson@example.com',
-        total_visits: 12,
-        current_tier: 'silver',
-        joined_date: '2024-01-10',
-        last_visit: '2024-01-21'
-      },
-      {
-        id: '5',
-        full_name: 'Charlie Brown',
-        email: 'charlie.brown@example.com',
-        total_visits: 1,
-        current_tier: 'bronze',
-        joined_date: '2024-01-20',
-        last_visit: '2024-01-20'
-      }
-    ]);
+      if (profilesData.error) throw profilesData.error;
+      if (statsData.error) throw statsData.error;
+      if (rewardsData.error) throw rewardsData.error;
+      if (visitsData.error) throw visitsData.error;
+
+      const tierCounts = statsData.data?.reduce(
+        (acc, stat) => {
+          acc[stat.current_tier]++;
+          return acc;
+        },
+        { bronze: 0, silver: 0, gold: 0 } as Record<string, number>
+      ) || { bronze: 0, silver: 0, gold: 0 };
+
+      setSystemStats({
+        total_customers: profilesData.data?.length || 0,
+        total_visits: visitsData.data?.length || 0,
+        rewards_claimed: rewardsData.data?.length || 0,
+        bronze_tier: tierCounts.bronze,
+        silver_tier: tierCounts.silver,
+        gold_tier: tierCounts.gold
+      });
+
+      // Load customer list with stats
+      const { data: customersData, error: customersError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          created_at,
+          customer_stats (
+            total_visits,
+            current_tier
+          ),
+          visits (
+            visit_date
+          )
+        `)
+        .eq('role', 'customer')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (customersError) throw customersError;
+
+      const formattedCustomers: CustomerData[] = customersData?.map(customer => ({
+        id: customer.id,
+        full_name: customer.full_name,
+        email: customer.email,
+        total_visits: customer.customer_stats?.[0]?.total_visits || 0,
+        current_tier: customer.customer_stats?.[0]?.current_tier || 'bronze',
+        joined_date: new Date(customer.created_at).toISOString().split('T')[0],
+        last_visit: customer.visits?.[0]?.visit_date 
+          ? new Date(customer.visits[0].visit_date).toISOString().split('T')[0]
+          : 'Never'
+      })) || [];
+
+      setCustomers(formattedCustomers);
+    } catch (error: any) {
+      console.error('Error loading system data:', error);
+      toast({
+        title: "Error loading data",
+        description: error.message || "Could not load system data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTierColor = (tier: string) => {
@@ -123,6 +146,15 @@ export const AdminDashboard = () => {
       </CardContent>
     </Card>
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="ml-2">Loading system data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -212,7 +244,7 @@ export const AdminDashboard = () => {
         <TabsContent value="customers">
           <div className="space-y-6">
             {/* Add Customer Form */}
-            <CustomerRegistrationForm onCustomerAdded={loadDemoData} />
+            <CustomerRegistrationForm onCustomerAdded={loadSystemData} />
             
             {/* Customer List */}
             <Card>
@@ -247,7 +279,10 @@ export const AdminDashboard = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(customer.last_visit).toLocaleDateString()}
+                        {customer.last_visit === 'Never' 
+                          ? 'Never' 
+                          : new Date(customer.last_visit).toLocaleDateString()
+                        }
                       </TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm">

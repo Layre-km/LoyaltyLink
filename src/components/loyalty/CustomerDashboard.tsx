@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, Gift, Users, Copy, Check } from "lucide-react";
+import { Crown, Gift, Users, Copy, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CustomerStats {
   total_visits: number;
@@ -23,67 +24,66 @@ interface Reward {
   claimed_at?: string;
 }
 
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  referral_code: string;
-}
-
 export const CustomerDashboard = () => {
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
-  // Demo data since authentication is disabled
   useEffect(() => {
-    loadDemoData();
-  }, []);
+    if (profile) {
+      loadCustomerData();
+    }
+  }, [profile]);
 
-  const loadDemoData = () => {
-    // Simulate customer data
-    setProfile({
-      id: 'demo-customer',
-      full_name: 'John Doe',
-      email: 'john.doe@example.com',
-      referral_code: 'JOHN2024'
-    });
+  const loadCustomerData = async () => {
+    if (!profile) return;
+    
+    setLoading(true);
+    try {
+      // Fetch customer stats
+      const { data: statsData, error: statsError } = await supabase
+        .from('customer_stats')
+        .select('*')
+        .eq('customer_id', profile.id)
+        .single();
 
-    setCustomerStats({
-      total_visits: 7,
-      current_tier: 'silver'
-    });
-
-    setRewards([
-      {
-        id: '1',
-        reward_title: 'Welcome Bonus',
-        reward_description: 'Thank you for joining our loyalty program!',
-        status: 'claimed',
-        reward_type: 'signup',
-        unlocked_at: '2024-01-01T00:00:00Z',
-        claimed_at: '2024-01-02T00:00:00Z'
-      },
-      {
-        id: '2',
-        reward_title: 'Milestone Reward - 6 Visits!',
-        reward_description: 'Congratulations on reaching 6 visits! Enjoy your reward.',
-        status: 'available',
-        reward_type: 'milestone',
-        unlocked_at: '2024-01-15T00:00:00Z'
-      },
-      {
-        id: '3',
-        reward_title: 'Tier Upgraded to SILVER',
-        reward_description: 'Congratulations! You have been upgraded to SILVER tier!',
-        status: 'available',
-        reward_type: 'tier_upgrade',
-        unlocked_at: '2024-01-15T00:00:00Z'
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error('Error fetching customer stats:', statsError);
+      } else {
+        setCustomerStats(statsData || { total_visits: 0, current_tier: 'bronze' });
       }
-    ]);
+
+      // Fetch rewards
+      const { data: rewardsData, error: rewardsError } = await supabase
+        .from('rewards')
+        .select('*')
+        .eq('customer_id', profile.id)
+        .order('unlocked_at', { ascending: false });
+
+      if (rewardsError) {
+        console.error('Error fetching rewards:', rewardsError);
+        toast({
+          title: "Error loading rewards",
+          description: "Could not load your rewards. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        setRewards(rewardsData || []);
+      }
+    } catch (error) {
+      console.error('Error loading customer data:', error);
+      toast({
+        title: "Error loading data",
+        description: "Could not load your loyalty data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTierColor = (tier: string) => {
@@ -119,6 +119,15 @@ export const CustomerDashboard = () => {
   const nextTierThreshold = getNextTierThreshold(customerStats?.current_tier || 'bronze');
   const progressToNextTier = nextTierThreshold ? 
     Math.min(((customerStats?.total_visits || 0) / nextTierThreshold) * 100, 100) : 100;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="ml-2">Loading your loyalty data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

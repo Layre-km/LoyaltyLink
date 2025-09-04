@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, Plus, Check, Clock, User, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Customer {
   id: string;
@@ -23,8 +24,12 @@ interface Customer {
 interface Reward {
   id: string;
   reward_title: string;
+  reward_description?: string;
   status: 'available' | 'claimed';
-  customer_name: string;
+  customer_id: string;
+  customer?: {
+    full_name: string;
+  };
 }
 
 interface Order {
@@ -40,59 +45,40 @@ export const StaffDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [visitNotes, setVisitNotes] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [pendingRewards, setPendingRewards] = useState<Reward[]>([]);
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
-  // Demo data since authentication is disabled
   useEffect(() => {
-    loadDemoData();
+    loadPendingRewards();
   }, []);
 
-  const loadDemoData = () => {
-    setCustomers([
-      {
-        id: '1',
-        full_name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone_number: '+1234567890',
-        stats: { total_visits: 7, current_tier: 'silver' }
-      },
-      {
-        id: '2',
-        full_name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        phone_number: '+1234567891',
-        stats: { total_visits: 3, current_tier: 'bronze' }
-      },
-      {
-        id: '3',
-        full_name: 'Bob Johnson',
-        email: 'bob.johnson@example.com',
-        phone_number: '+1234567892',
-        stats: { total_visits: 15, current_tier: 'silver' }
-      }
-    ]);
+  const loadPendingRewards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rewards')
+        .select(`
+          *,
+          customer:profiles!rewards_customer_id_fkey (
+            full_name
+          )
+        `)
+        .eq('status', 'available')
+        .order('unlocked_at', { ascending: false });
 
-    setPendingRewards([
-      {
-        id: '1',
-        reward_title: 'Milestone Reward - 6 Visits!',
-        status: 'available',
-        customer_name: 'John Doe'
-      },
-      {
-        id: '2',
-        reward_title: 'Tier Upgraded to SILVER',
-        status: 'available',
-        customer_name: 'John Doe'
+      if (error) {
+        console.error('Error fetching rewards:', error);
+      } else {
+        setPendingRewards(data || []);
       }
-    ]);
+    } catch (error) {
+      console.error('Error loading rewards:', error);
+    }
   };
 
-  const searchCustomers = () => {
+  const searchCustomers = async () => {
     if (!searchTerm.trim()) {
       toast({
         title: "Search required",
@@ -102,24 +88,49 @@ export const StaffDashboard = () => {
       return;
     }
 
-    const found = customers.filter(customer => 
-      customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone_number?.includes(searchTerm)
-    );
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          customer_stats (
+            total_visits,
+            current_tier
+          )
+        `)
+        .or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`)
+        .limit(1)
+        .single();
 
-    if (found.length === 0) {
-      toast({
-        title: "Customer not found",
-        description: "No customer found with the provided search criteria.",
-        variant: "destructive"
-      });
-      setSelectedCustomer(null);
-    } else {
-      setSelectedCustomer(found[0]);
+      if (error) {
+        toast({
+          title: "Customer not found",
+          description: "No customer found with the provided search criteria.",
+          variant: "destructive"
+        });
+        setSelectedCustomer(null);
+        return;
+      }
+
+      const customer: Customer = {
+        id: data.id,
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        stats: data.customer_stats?.[0] || { total_visits: 0, current_tier: 'bronze' }
+      };
+
+      setSelectedCustomer(customer);
       toast({
         title: "Customer found",
-        description: `Found ${found[0].full_name}`
+        description: `Found ${customer.full_name}`
+      });
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      toast({
+        title: "Search error",
+        description: "Could not search customers. Please try again.",
+        variant: "destructive"
       });
     }
   };
@@ -134,42 +145,64 @@ export const StaffDashboard = () => {
       return;
     }
 
+    if (!profile) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to log visits.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoggingVisit(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update customer stats (demo)
-      const updatedStats = {
-        total_visits: (selectedCustomer.stats?.total_visits || 0) + 1,
-        current_tier: selectedCustomer.stats?.current_tier || 'bronze'
+      // Insert visit record
+      const { error: visitError } = await supabase
+        .from('visits')
+        .insert({
+          customer_id: selectedCustomer.id,
+          logged_by_staff_id: profile.id,
+          notes: visitNotes.trim() || null
+        });
+
+      if (visitError) {
+        throw visitError;
+      }
+
+      // Refresh customer stats after visit
+      const { data: updatedStats, error: statsError } = await supabase
+        .from('customer_stats')
+        .select('*')
+        .eq('customer_id', selectedCustomer.id)
+        .single();
+
+      if (statsError) {
+        console.error('Error fetching updated stats:', statsError);
+      }
+
+      const newStats = updatedStats || { 
+        total_visits: (selectedCustomer.stats?.total_visits || 0) + 1, 
+        current_tier: selectedCustomer.stats?.current_tier || 'bronze' 
       };
 
       setSelectedCustomer({
         ...selectedCustomer,
-        stats: updatedStats
+        stats: newStats
       });
 
-      // Update customers list
-      setCustomers(prev => 
-        prev.map(c => 
-          c.id === selectedCustomer.id 
-            ? { ...c, stats: updatedStats }
-            : c
-        )
-      );
-
       setVisitNotes("");
+      loadPendingRewards(); // Refresh rewards in case new ones were created
       
       toast({
         title: "Visit logged successfully",
-        description: `Visit recorded for ${selectedCustomer.full_name}. Total visits: ${updatedStats.total_visits}`
+        description: `Visit recorded for ${selectedCustomer.full_name}. Total visits: ${newStats.total_visits}`
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error logging visit:', error);
       toast({
         title: "Error logging visit",
-        description: "Please try again.",
+        description: error.message || "Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -178,10 +211,30 @@ export const StaffDashboard = () => {
   };
 
   const validateReward = async (rewardId: string) => {
+    if (!profile) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to validate rewards.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      const { error } = await supabase
+        .from('rewards')
+        .update({
+          status: 'claimed',
+          claimed_at: new Date().toISOString(),
+          claimed_by_staff_id: profile.id
+        })
+        .eq('id', rewardId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
       setPendingRewards(prev => 
         prev.map(reward => 
           reward.id === rewardId 
@@ -193,12 +246,13 @@ export const StaffDashboard = () => {
       const reward = pendingRewards.find(r => r.id === rewardId);
       toast({
         title: "Reward validated",
-        description: `Reward claimed for ${reward?.customer_name}`
+        description: `Reward claimed for ${reward?.customer?.full_name}`
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error validating reward:', error);
       toast({
         title: "Error validating reward",
-        description: "Please try again.",
+        description: error.message || "Please try again.",
         variant: "destructive"
       });
     }
@@ -402,8 +456,13 @@ export const StaffDashboard = () => {
                         <div className="flex-1">
                           <h4 className="font-semibold">{reward.reward_title}</h4>
                           <p className="text-sm text-muted-foreground">
-                            Customer: {reward.customer_name}
+                            Customer: {reward.customer?.full_name}
                           </p>
+                          {reward.reward_description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {reward.reward_description}
+                            </p>
+                          )}
                         </div>
                         <Button 
                           size="sm"
@@ -422,7 +481,7 @@ export const StaffDashboard = () => {
       </div>
 
       {/* Add New Customer */}
-      <CustomerRegistrationForm onCustomerAdded={loadDemoData} />
+      <CustomerRegistrationForm onCustomerAdded={loadPendingRewards} />
 
       {/* Recent Activities */}
       <Card>
