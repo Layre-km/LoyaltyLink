@@ -7,7 +7,7 @@ import { CustomerDashboard } from "@/components/loyalty/CustomerDashboard";
 import { StaffDashboard } from "@/components/loyalty/StaffDashboard";
 import { AdminDashboard } from "@/components/loyalty/AdminDashboard";
 import { Crown, Users, Settings, LogOut } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 type UserRole = 'customer' | 'staff' | 'admin';
 
