@@ -13,19 +13,19 @@ interface Profile {
   date_of_birth?: string;
 }
 
+interface SignUpData {
+  fullName: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  referralCode?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (
-    email: string, 
-    password: string, 
-    fullName: string, 
-    phoneNumber?: string, 
-    dateOfBirth?: Date, 
-    referralCode?: string
-  ) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData: SignUpData) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -108,24 +108,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (
-    email: string, 
-    password: string, 
-    fullName: string, 
-    phoneNumber?: string, 
-    dateOfBirth?: Date, 
-    referralCode?: string
-  ) => {
+  const signUp = async (email: string, password: string, userData: SignUpData) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
-          full_name: fullName,
-          phone_number: phoneNumber || null,
-          date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : null,
-          referred_by_code: referralCode || null,
+          full_name: userData.fullName,
+          phone_number: userData.phoneNumber,
+          date_of_birth: userData.dateOfBirth,
+          referred_by_code: userData.referralCode,
         }
       }
     });

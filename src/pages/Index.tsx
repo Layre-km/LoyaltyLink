@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CustomerDashboard } from "@/components/loyalty/CustomerDashboard";
 import { StaffDashboard } from "@/components/loyalty/StaffDashboard";
 import { AdminDashboard } from "@/components/loyalty/AdminDashboard";
-import { Crown, Users, Settings, LogOut } from "lucide-react";
+import { Crown, Users, Settings, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 type UserRole = 'customer' | 'staff' | 'admin';
@@ -66,14 +66,24 @@ const Index = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Digital Loyalty Program
             </h1>
-            <Button 
-              variant="outline" 
-              onClick={signOut}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-3">
+              {profile?.role === 'customer' && (
+                <Link to="/admin-access">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Request Admin Access
+                  </Button>
+                </Link>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={signOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
           <p className="text-xl text-muted-foreground mb-6">
             Welcome back, {profile?.full_name || user?.email}
