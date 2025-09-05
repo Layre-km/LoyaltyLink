@@ -283,6 +283,10 @@ export type Database = {
         Args: { customer_profile_id: string }
         Returns: undefined
       }
+      create_admin_access: {
+        Args: { secret_key: string; user_email: string }
+        Returns: boolean
+      }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -294,6 +298,14 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      promote_user_to_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
+      promote_user_to_staff: {
+        Args: { user_email: string }
+        Returns: undefined
       }
       update_customer_tier: {
         Args: { customer_profile_id: string }
