@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2 } from "lucide-react";
+import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2, Clock, Search } from "lucide-react";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
+import { MenuManagement } from "./MenuManagement";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerData {
@@ -28,14 +30,27 @@ interface SystemStats {
   gold_tier: number;
 }
 
+interface OrderHistory {
+  id: string;
+  table_number: string;
+  items: { id: string; name: string; qty: number; price: number }[];
+  total_amount: number;
+  created_at: string;
+  delivered_at: string;
+  notes?: string;
+}
+
 export const AdminDashboard = () => {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     loadSystemData();
+    loadOrderHistory();
   }, []);
 
   const loadSystemData = async () => {
@@ -126,6 +141,46 @@ export const AdminDashboard = () => {
       default: return 'bronze';
     }
   };
+
+  const loadOrderHistory = async () => {
+    try {
+      // Get delivered orders older than 1 hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'delivered')
+        .lt('delivered_at', oneHourAgo.toISOString())
+        .order('delivered_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      setOrderHistory((data || []).map(order => ({
+        ...order,
+        items: order.items as any // Cast JSONB to expected type
+      })));
+    } catch (error: any) {
+      console.error('Error loading order history:', error);
+      toast({
+        title: "Error loading order history",
+        description: error.message || "Could not load order history.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredOrderHistory = orderHistory.filter(order => {
+    if (!orderSearchTerm.trim()) return true;
+    
+    const searchLower = orderSearchTerm.toLowerCase();
+    return (
+      order.table_number.toLowerCase().includes(searchLower) ||
+      order.items.some(item => item.name.toLowerCase().includes(searchLower)) ||
+      order.total_amount.toString().includes(searchLower)
+    );
+  });
 
   const StatCard = ({ title, value, icon: Icon, description }: {
     title: string;
@@ -235,8 +290,10 @@ export const AdminDashboard = () => {
 
       {/* Management Tabs */}
       <Tabs defaultValue="customers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="customers">Customer Management</TabsTrigger>
+          <TabsTrigger value="orders">Order History</TabsTrigger>
+          <TabsTrigger value="menu">Menu Management</TabsTrigger>
           <TabsTrigger value="settings">System Settings</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -296,6 +353,79 @@ export const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Order History
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search orders..."
+                    value={orderSearchTerm}
+                    onChange={(e) => setOrderSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredOrderHistory.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Table</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Delivered</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrderHistory.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>
+                          <Badge variant="outline">{order.table_number}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm space-y-1">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="flex justify-between">
+                                <span>{item.name} × {item.qty}</span>
+                                <span>${(item.price * item.qty).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          ${order.total_amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(order.delivered_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {order.notes || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="menu">
+          <MenuManagement />
         </TabsContent>
 
         <TabsContent value="settings">

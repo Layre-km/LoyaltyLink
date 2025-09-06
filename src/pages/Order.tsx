@@ -8,17 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Simple demo menu. In a real app this could come from the DB.
-const MENU = [
-  { id: "espresso", name: "Espresso", price: 2.5, description: "Rich single shot" },
-  { id: "latte", name: "Caffe Latte", price: 3.9, description: "Espresso with steamed milk" },
-  { id: "cappuccino", name: "Cappuccino", price: 3.9, description: "Foamy and balanced" },
-  { id: "americano", name: "Americano", price: 3.2, description: "Espresso diluted with hot water" },
-  { id: "croissant", name: "Butter Croissant", price: 2.8, description: "Flaky, baked fresh" },
-  { id: "muffin", name: "Blueberry Muffin", price: 2.6, description: "Sweet and soft" },
-] as const;
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  category: string;
+  is_available: boolean;
+}
 
- type CartItem = {
+type CartItem = {
   id: string;
   name: string;
   price: number;
@@ -32,6 +31,8 @@ const Order = () => {
   const [notes, setNotes] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [placing, setPlacing] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     document.title = "Place Order | Loyalty Program";
@@ -44,16 +45,43 @@ const Order = () => {
       link.setAttribute('href', href);
       document.head.appendChild(link);
     }
+    
+    // Load menu items from database
+    loadMenuItems();
   }, []);
+
+  const loadMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      setMenuItems(data || []);
+    } catch (error: any) {
+      console.error('Error loading menu items:', error);
+      toast({
+        title: "Error loading menu",
+        description: "Could not load menu items. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const items: CartItem[] = useMemo(() => {
     return Object.entries(cart)
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => {
-        const m = MENU.find(i => i.id === id)!;
+        const m = menuItems.find(i => i.id === id)!;
         return { id: m.id, name: m.name, price: m.price, qty };
       });
-  }, [cart]);
+  }, [cart, menuItems]);
 
   const total = useMemo(
     () => items.reduce((sum, it) => sum + it.price * it.qty, 0),
@@ -117,22 +145,51 @@ const Order = () => {
               <CardTitle>Menu</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {MENU.map((m) => (
-                <div key={m.id} className="flex items-start justify-between gap-4 p-3 rounded-lg border">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{m.name}</h3>
-                      <Badge variant="secondary">${m.price.toFixed(2)}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{m.description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="outline" onClick={() => updateQty(m.id, -1)}>-</Button>
-                    <span className="w-8 text-center font-semibold">{cart[m.id] || 0}</span>
-                    <Button onClick={() => updateQty(m.id, 1)}>+</Button>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading menu items...
                 </div>
-              ))}
+              ) : menuItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No menu items available at the moment.
+                </div>
+              ) : (
+                <>
+                  {['food', 'drink', 'dessert'].map(category => {
+                    const categoryItems = menuItems.filter(item => item.category === category);
+                    if (categoryItems.length === 0) return null;
+                    
+                    return (
+                      <div key={category}>
+                        <h3 className="font-semibold text-lg mb-3 capitalize">
+                          {category}s
+                        </h3>
+                        <div className="space-y-3">
+                          {categoryItems.map((m) => (
+                            <div key={m.id} className="flex items-start justify-between gap-4 p-3 rounded-lg border">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold">{m.name}</h4>
+                                  <Badge variant="secondary">${m.price.toFixed(2)}</Badge>
+                                </div>
+                                {m.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">{m.description}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Button variant="outline" size="sm" onClick={() => updateQty(m.id, -1)}>-</Button>
+                                <span className="w-8 text-center font-semibold">{cart[m.id] || 0}</span>
+                                <Button size="sm" onClick={() => updateQty(m.id, 1)}>+</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {category !== 'dessert' && <Separator className="my-4" />}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </CardContent>
           </Card>
 

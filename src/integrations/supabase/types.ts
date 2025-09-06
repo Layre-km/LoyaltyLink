@@ -52,10 +52,47 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
           customer_profile_id: string | null
+          delivered_at: string | null
           id: string
           items: Json
           notes: string | null
@@ -66,6 +103,7 @@ export type Database = {
         Insert: {
           created_at?: string
           customer_profile_id?: string | null
+          delivered_at?: string | null
           id?: string
           items: Json
           notes?: string | null
@@ -76,6 +114,7 @@ export type Database = {
         Update: {
           created_at?: string
           customer_profile_id?: string | null
+          delivered_at?: string | null
           id?: string
           items?: Json
           notes?: string | null

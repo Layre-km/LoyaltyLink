@@ -39,6 +39,8 @@ interface Order {
   total_amount: number;
   created_at: string;
   status: string;
+  notes?: string;
+  delivered_at?: string;
 }
 
 export const StaffDashboard = () => {
@@ -48,6 +50,7 @@ export const StaffDashboard = () => {
   const [pendingRewards, setPendingRewards] = useState<Reward[]>([]);
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -258,29 +261,83 @@ export const StaffDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const loadOrders = async () => {
+  const loadActiveOrders = async () => {
+    try {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .in('status', ['pending', 'preparing'])
+        .order('created_at', { ascending: false });
+      
       if (error) {
         console.error(error);
         toast({ title: 'Failed to load orders', description: error.message, variant: 'destructive' });
       } else {
-        setOrders((data || []) as any);
+        // Filter out delivered orders older than 1 hour
+        const filteredOrders = (data || []).filter(order => {
+          if (order.status !== 'delivered') return true;
+          
+          const deliveredAt = new Date(order.delivered_at || order.created_at);
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          return deliveredAt > oneHourAgo;
+        });
+        
+        setOrders(filteredOrders as any);
       }
-    };
-    loadOrders();
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: 'preparing' | 'delivered') => {
+    if (!profile) {
+      toast({ title: "Authentication required", description: "You must be logged in to update orders.", variant: "destructive" });
+      return;
+    }
+
+    setUpdatingOrder(orderId);
+    try {
+      const updates: any = { status: newStatus };
+      if (newStatus === 'delivered') {
+        updates.delivered_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order updated",
+        description: `Order marked as ${newStatus}`
+      });
+
+      // Refresh orders to reflect changes
+      loadActiveOrders();
+    } catch (error: any) {
+      console.error('Error updating order:', error);
+      toast({
+        title: "Error updating order",
+        description: error.message || "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
+
+  useEffect(() => {
+    loadActiveOrders();
 
     const channel = supabase
-      .channel('orders-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-        setOrders(prev => [payload.new as any, ...prev]);
+      .channel('orders-realtime-staff')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
+        loadActiveOrders();
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
-        setOrders(prev => prev.map(o => o.id === (payload.new as any).id ? (payload.new as any) : o));
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, () => {
+        loadActiveOrders();
       })
       .subscribe();
 
@@ -313,33 +370,70 @@ export const StaffDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Incoming Orders - shown first */}
+      {/* Active Orders Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            Incoming Orders
+            Order Management
           </CardTitle>
         </CardHeader>
         <CardContent>
           {orders.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No orders yet.</p>
+            <p className="text-muted-foreground text-center py-8">No active orders.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {orders.map((order) => (
-                <div key={order.id} className="p-4 border rounded-lg flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Table {order.table_number}</Badge>
-                      <span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleTimeString()}</span>
+                <div key={order.id} className="p-4 border rounded-lg">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary">Table {order.table_number}</Badge>
+                        <Badge variant={order.status === 'pending' ? 'destructive' : order.status === 'preparing' ? 'default' : 'secondary'}>
+                          {order.status.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        {(order.items || []).map((item, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>{item.name} × {item.qty}</span>
+                            <span>${(item.price * item.qty).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {order.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">
+                          Note: {order.notes}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {(order.items || []).map(i => `${i.name}×${i.qty}`).join(', ')}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-semibold">${order.total_amount.toFixed(2)}</div>
-                    <Badge>{order.status}</Badge>
+                    <div className="text-right shrink-0">
+                      <div className="font-bold text-lg mb-2">${order.total_amount.toFixed(2)}</div>
+                      <div className="flex flex-col gap-2">
+                        {order.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, 'preparing')}
+                            disabled={updatingOrder === order.id}
+                          >
+                            {updatingOrder === order.id ? 'Starting...' : 'Start Order'}
+                          </Button>
+                        )}
+                        {order.status === 'preparing' && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => updateOrderStatus(order.id, 'delivered')}
+                            disabled={updatingOrder === order.id}
+                          >
+                            {updatingOrder === order.id ? 'Completing...' : 'Mark Delivered'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
