@@ -12,6 +12,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect } from 'react';
+import { signInSchema, signUpSchema } from '@/lib/validations';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +27,7 @@ const Auth = () => {
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -37,6 +40,20 @@ const Auth = () => {
     setLoading(true);
     setError('');
     
+    // Validate input
+    try {
+      signInSchema.parse({ email, password });
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Invalid input";
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+    
     const { error } = await signIn(email, password);
     if (error) {
       setError(error.message);
@@ -48,6 +65,27 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    // Validate input
+    try {
+      signUpSchema.parse({
+        email,
+        password,
+        fullName,
+        phoneNumber,
+        dateOfBirth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : '',
+        referralCode,
+      });
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Invalid input";
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
     
     const { error } = await signUp(email, password, {
       fullName,

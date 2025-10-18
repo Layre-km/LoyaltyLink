@@ -10,6 +10,7 @@ import { UserPlus, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { customerRegistrationSchema, sanitizeText } from "@/lib/validations";
 
 interface CustomerRegistrationFormProps {
   onCustomerAdded?: () => void;
@@ -31,45 +32,23 @@ export const CustomerRegistrationForm = ({ onCustomerAdded }: CustomerRegistrati
   };
 
   const validateForm = () => {
-    if (!formData.full_name.trim()) {
+    try {
+      customerRegistrationSchema.parse({
+        fullName: formData.full_name,
+        email: formData.email,
+        phoneNumber: formData.phone_number,
+        referralCode: formData.referred_by_code,
+      });
+      return true;
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Invalid form data";
       toast({
-        title: "Name required",
-        description: "Please enter the customer's full name.",
+        title: "Validation Error",
+        description: errorMessage,
         variant: "destructive"
       });
       return false;
     }
-
-    if (!formData.email.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter the customer's email address.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!formData.phone_number.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter the customer's phone number.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,12 +59,12 @@ export const CustomerRegistrationForm = ({ onCustomerAdded }: CustomerRegistrati
     setIsSubmitting(true);
 
     try {
-      // First, create the profile
+      // First, create the profile with sanitized data
       const profileData = {
         user_id: crypto.randomUUID(), // Generate a UUID for the customer
-        full_name: formData.full_name.trim(),
-        email: formData.email.trim(),
-        phone_number: formData.phone_number.trim(),
+        full_name: sanitizeText(formData.full_name.trim()),
+        email: formData.email.trim().toLowerCase(),
+        phone_number: sanitizeText(formData.phone_number.trim()),
         date_of_birth: birthday ? birthday.toISOString().split('T')[0] : null,
         referred_by_code: formData.referred_by_code.trim() || null,
         referral_code: crypto.randomUUID().slice(0, 8).toUpperCase(), // Generate referral code

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { orderSchema } from "@/lib/validations";
 
 interface MenuItem {
   id: string;
@@ -27,6 +29,7 @@ type CartItem = {
 const Order = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [tableNumber, setTableNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -99,28 +102,46 @@ const Order = () => {
   };
 
   const placeOrder = async () => {
-    if (!tableNumber.trim()) {
-      toast({ title: "Table number required", description: "Please enter your table number.", variant: "destructive" });
-      return;
-    }
-    if (items.length === 0) {
-      toast({ title: "Cart is empty", description: "Please add at least one item." , variant: "destructive"});
+    // Validate input using Zod schema
+    try {
+      orderSchema.parse({
+        tableNumber: tableNumber,
+        notes: notes || '',
+        items: items,
+        total: Number(total.toFixed(2)),
+      });
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Invalid order data";
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       return;
     }
 
     setPlacing(true);
     try {
+      // Link order to logged-in customer profile if available
+      const customerProfileId = profile?.id || null;
+
       const { error } = await supabase.from('orders').insert({
         table_number: tableNumber.trim(),
         status: 'pending',
         items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price })),
         total_amount: Number(total.toFixed(2)),
-        notes: notes || null,
-        customer_profile_id: null
+        notes: notes.trim() || null,
+        customer_profile_id: customerProfileId
       });
+      
       if (error) throw error;
 
-      toast({ title: "Order placed!", description: "Your order has been sent to the staff." });
+      toast({ 
+        title: "Order placed!", 
+        description: customerProfileId 
+          ? "Your order has been sent to the staff and a visit has been logged to your account."
+          : "Your order has been sent to the staff."
+      });
       navigate('/');
     } catch (e: any) {
       console.error(e);
