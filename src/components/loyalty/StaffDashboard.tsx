@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Check, Clock, User, ShoppingCart } from "lucide-react";
+import { Search, Plus, Check, Clock, User, ShoppingCart, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 import { useAuth } from "@/hooks/useAuth";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 interface Customer {
   id: string;
@@ -57,6 +58,18 @@ export const StaffDashboard = () => {
   useEffect(() => {
     loadPendingRewards();
   }, []);
+
+  const refreshAll = async () => {
+    await Promise.all([
+      loadPendingRewards(),
+      loadActiveOrders()
+    ]);
+  };
+
+  const { pullDistance, isRefreshing, pullProgress } = usePullToRefresh({
+    onRefresh: refreshAll,
+    disabled: false
+  });
 
   const loadPendingRewards = async () => {
     try {
@@ -355,6 +368,21 @@ export const StaffDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Pull to Refresh Indicator */}
+      {pullDistance > 0 && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-primary/10 transition-all"
+          style={{ height: `${pullDistance}px` }}
+        >
+          <RefreshCw 
+            className={`w-6 h-6 text-primary transition-transform ${
+              isRefreshing ? 'animate-spin' : ''
+            }`}
+            style={{ transform: `rotate(${pullProgress * 360}deg)` }}
+          />
+        </div>
+      )}
+
       {/* Staff Header */}
       <Card>
         <CardHeader>
@@ -418,6 +446,7 @@ export const StaffDashboard = () => {
                             size="sm"
                             onClick={() => updateOrderStatus(order.id, 'preparing')}
                             disabled={updatingOrder === order.id}
+                            className="min-h-[44px]"
                           >
                             {updatingOrder === order.id ? 'Starting...' : 'Start Order'}
                           </Button>
@@ -428,6 +457,7 @@ export const StaffDashboard = () => {
                             variant="default"
                             onClick={() => updateOrderStatus(order.id, 'delivered')}
                             disabled={updatingOrder === order.id}
+                            className="min-h-[44px]"
                           >
                             {updatingOrder === order.id ? 'Completing...' : 'Mark Delivered'}
                           </Button>
@@ -461,8 +491,9 @@ export const StaffDashboard = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
+                  className="min-h-[44px]"
                 />
-                <Button onClick={searchCustomers}>
+                <Button onClick={searchCustomers} className="min-h-[44px] min-w-[44px]">
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
@@ -561,6 +592,7 @@ export const StaffDashboard = () => {
                         <Button 
                           size="sm"
                           onClick={() => validateReward(reward.id)}
+                          className="min-h-[44px]"
                         >
                           <Check className="w-4 h-4 mr-2" />
                           Validate

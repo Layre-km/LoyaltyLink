@@ -6,10 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2, Clock, Search } from "lucide-react";
+import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2, Clock, Search, DollarSign, RefreshCw } from "lucide-react";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 import { MenuManagement } from "./MenuManagement";
 import { useToast } from "@/hooks/use-toast";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface CustomerData {
   id: string;
@@ -46,12 +47,25 @@ export const AdminDashboard = () => {
   const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
+  const analytics = useAnalytics();
 
   useEffect(() => {
     loadSystemData();
     loadOrderHistory();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      loadSystemData(),
+      loadOrderHistory(),
+      analytics.refresh()
+    ]);
+    setRefreshing(false);
+    toast({ title: "Data refreshed" });
+  };
 
   const loadSystemData = async () => {
     setLoading(true);
@@ -216,10 +230,21 @@ export const AdminDashboard = () => {
       {/* Admin Header */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            Admin Dashboard
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Admin Dashboard
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="min-h-[44px] min-w-[44px]"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
@@ -237,22 +262,22 @@ export const AdminDashboard = () => {
           description="Active loyalty members"
         />
         <StatCard
-          title="Total Visits"
-          value={systemStats?.total_visits || 0}
+          title="Total Revenue"
+          value={`$${analytics.totalRevenue.toFixed(2)}`}
+          icon={DollarSign}
+          description="From all orders"
+        />
+        <StatCard
+          title="Avg Visits/Customer"
+          value={analytics.avgVisitsPerCustomer.toFixed(1)}
           icon={TrendingUp}
-          description="All recorded visits"
+          description="Customer engagement"
         />
         <StatCard
-          title="Rewards Claimed"
-          value={systemStats?.rewards_claimed || 0}
+          title="Reward Redemption"
+          value={`${analytics.rewardRedemptionRate}%`}
           icon={Gift}
-          description="Successfully redeemed"
-        />
-        <StatCard
-          title="Gold Members"
-          value={systemStats?.gold_tier || 0}
-          icon={Calendar}
-          description="Premium tier customers"
+          description="Claimed rewards"
         />
       </div>
 
@@ -288,15 +313,17 @@ export const AdminDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Management Tabs */}
-      <Tabs defaultValue="customers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="customers">Customer Management</TabsTrigger>
-          <TabsTrigger value="orders">Order History</TabsTrigger>
-          <TabsTrigger value="menu">Menu Management</TabsTrigger>
-          <TabsTrigger value="settings">System Settings</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+        {/* Management Tabs */}
+        <Tabs defaultValue="customers" className="space-y-4">
+          <div className="overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-5 min-w-[600px]">
+              <TabsTrigger value="customers" className="min-h-[44px]">Customer Management</TabsTrigger>
+              <TabsTrigger value="orders" className="min-h-[44px]">Order History</TabsTrigger>
+              <TabsTrigger value="menu" className="min-h-[44px]">Menu Management</TabsTrigger>
+              <TabsTrigger value="settings" className="min-h-[44px]">System Settings</TabsTrigger>
+              <TabsTrigger value="analytics" className="min-h-[44px]">Analytics</TabsTrigger>
+            </TabsList>
+          </div>
 
         <TabsContent value="customers">
           <div className="space-y-6">
@@ -309,53 +336,54 @@ export const AdminDashboard = () => {
                 <CardTitle>Customer Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Visits</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead>Last Visit</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">
-                        {customer.full_name}
-                      </TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.total_visits}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={`bg-${getTierColor(customer.current_tier)} text-${getTierColor(customer.current_tier)}-foreground`}
-                        >
-                          {customer.current_tier.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {customer.last_visit === 'Never' 
-                          ? 'Never' 
-                          : new Date(customer.last_visit).toLocaleDateString()
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Customer</TableHead>
+                        <TableHead className="min-w-[200px]">Email</TableHead>
+                        <TableHead>Visits</TableHead>
+                        <TableHead>Tier</TableHead>
+                        <TableHead className="min-w-[120px]">Last Visit</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {customers.map((customer) => (
+                        <TableRow key={customer.id}>
+                          <TableCell className="font-medium">
+                            {customer.full_name}
+                          </TableCell>
+                          <TableCell>{customer.email}</TableCell>
+                          <TableCell>{customer.total_visits}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              className={`bg-${getTierColor(customer.current_tier)} text-${getTierColor(customer.current_tier)}-foreground`}
+                            >
+                              {customer.current_tier.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {customer.last_visit === 'Never' 
+                              ? 'Never' 
+                              : new Date(customer.last_visit).toLocaleDateString()
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" className="min-h-[44px]">
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="orders">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -369,7 +397,7 @@ export const AdminDashboard = () => {
                     placeholder="Search orders..."
                     value={orderSearchTerm}
                     onChange={(e) => setOrderSearchTerm(e.target.value)}
-                    className="w-64"
+                    className="w-64 min-h-[44px]"
                   />
                 </div>
               </div>
@@ -380,49 +408,50 @@ export const AdminDashboard = () => {
                   {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Table</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Delivered</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrderHistory.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>
-                          <Badge variant="outline">{order.table_number}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm space-y-1">
-                            {order.items.map((item, idx) => (
-                              <div key={idx} className="flex justify-between">
-                                <span>{item.name} × {item.qty}</span>
-                                <span>${(item.price * item.qty).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          ${order.total_amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(order.delivered_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {order.notes || '-'}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Table</TableHead>
+                        <TableHead className="min-w-[200px]">Items</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead className="min-w-[150px]">Delivered</TableHead>
+                        <TableHead>Notes</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrderHistory.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>
+                            <Badge variant="outline">{order.table_number}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm space-y-1">
+                              {order.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between">
+                                  <span>{item.name} × {item.qty}</span>
+                                  <span>${(item.price * item.qty).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            ${order.total_amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {new Date(order.delivered_at).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {order.notes || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
         <TabsContent value="menu">
           <MenuManagement />
@@ -462,7 +491,7 @@ export const AdminDashboard = () => {
                 </div>
               </div>
 
-              <Button>Update Settings</Button>
+              <Button className="min-h-[44px]">Update Settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -470,47 +499,56 @@ export const AdminDashboard = () => {
         <TabsContent value="analytics">
           <Card>
             <CardHeader>
-              <CardTitle>System Analytics</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Real-Time Analytics
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-3">Visit Trends</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>• Average visits per customer: 6.9</p>
-                    <p>• Most active day: Friday</p>
-                    <p>• Peak hours: 2pm - 4pm</p>
-                    <p>• Monthly growth: +12%</p>
-                  </div>
+              {analytics.loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Loading analytics...</span>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-3">Reward Performance</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>• Redemption rate: 78%</p>
-                    <p>• Most popular: Milestone rewards</p>
-                    <p>• Referral success rate: 34%</p>
-                    <p>• Birthday rewards sent: 23 this month</p>
-                  </div>
+              ) : analytics.error ? (
+                <div className="text-center py-8 text-destructive">
+                  {analytics.error}
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-3">Customer Metrics</h4>
+                      <div className="space-y-2 text-sm">
+                        <p>• Average visits per customer: <strong>{analytics.avgVisitsPerCustomer}</strong></p>
+                        <p>• Customer acquisition (30 days): <strong>{analytics.customerAcquisitionRate}</strong> new visits</p>
+                        <p>• Reward redemption rate: <strong>{analytics.rewardRedemptionRate}%</strong></p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-3">Revenue & Orders</h4>
+                      <div className="space-y-2 text-sm">
+                        <p>• Total revenue: <strong>${analytics.totalRevenue.toFixed(2)}</strong></p>
+                        <p>• Popular menu items below</p>
+                      </div>
+                    </div>
+                  </div>
 
-              <div>
-                <h4 className="font-semibold mb-3">Customer Insights</h4>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="p-3 bg-muted/50 rounded">
-                    <div className="font-medium">New Signups</div>
-                    <div className="text-muted-foreground">+15 this week</div>
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded">
-                    <div className="font-medium">Retention Rate</div>
-                    <div className="text-muted-foreground">82% return visitors</div>
-                  </div>
-                  <div className="p-3 bg-muted/50 rounded">
-                    <div className="font-medium">Avg. Time to Gold</div>
-                    <div className="text-muted-foreground">3.2 months</div>
-                  </div>
-                </div>
-              </div>
+                  {analytics.popularMenuItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-3">Popular Menu Items</h4>
+                      <div className="space-y-2">
+                        {analytics.popularMenuItems.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                            <span className="font-medium">{idx + 1}. {item.name}</span>
+                            <Badge variant="secondary">{item.count} orders</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

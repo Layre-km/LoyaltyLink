@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, Gift, Users, Copy, Check, Loader2 } from "lucide-react";
+import { Crown, Gift, Users, Copy, Check, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 interface CustomerStats {
   total_visits: number;
@@ -86,6 +87,11 @@ export const CustomerDashboard = () => {
     }
   };
 
+  const { pullDistance, isRefreshing, pullProgress } = usePullToRefresh({
+    onRefresh: loadCustomerData,
+    disabled: loading
+  });
+
   const getTierColor = (tier: string) => {
     switch (tier) {
       case 'bronze': return 'bronze';
@@ -131,6 +137,21 @@ export const CustomerDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Pull to Refresh Indicator */}
+      {pullDistance > 0 && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-primary/10 transition-all"
+          style={{ height: `${pullDistance}px` }}
+        >
+          <RefreshCw 
+            className={`w-6 h-6 text-primary transition-transform ${
+              isRefreshing ? 'animate-spin' : ''
+            }`}
+            style={{ transform: `rotate(${pullProgress * 360}deg)` }}
+          />
+        </div>
+      )}
+
       {/* Customer Profile Header */}
       <Card>
         <CardHeader>
@@ -186,7 +207,7 @@ export const CustomerDashboard = () => {
             <p className="text-sm text-muted-foreground">
               Ready to order? Choose items from our menu and tell us your table number.
             </p>
-            <Button onClick={() => navigate('/order')}>
+            <Button onClick={() => navigate('/order')} className="min-h-[44px]">
               Place an Order
             </Button>
           </div>
@@ -261,7 +282,7 @@ export const CustomerDashboard = () => {
                     size="sm" 
                     variant="outline"
                     onClick={copyReferralCode}
-                    className="shrink-0"
+                    className="shrink-0 min-h-[44px] min-w-[44px]"
                   >
                     {copiedCode ? (
                       <Check className="w-4 h-4" />
