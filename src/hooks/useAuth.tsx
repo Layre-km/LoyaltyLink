@@ -7,7 +7,7 @@ interface Profile {
   user_id: string;
   email: string;
   full_name: string;
-  role: 'customer' | 'staff' | 'admin';
+  roles: string[];
   referral_code: string;
   phone_number?: string;
   date_of_birth?: string;
@@ -59,7 +59,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error fetching profile:', error);
         return null;
       }
-      return data as Profile;
+      
+      // Fetch user roles from user_roles table
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+      
+      const roles = rolesData?.map(r => r.role) || [];
+      
+      return { ...data, roles } as Profile;
     } catch (error) {
       console.error('Error fetching profile:', error);
       return null;

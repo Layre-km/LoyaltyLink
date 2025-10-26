@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { menuItemSchema } from "@/lib/validations";
+import { z } from "zod";
 
 interface MenuItem {
   id: string;
@@ -114,6 +116,26 @@ export const MenuManagement = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Validate with Zod schema
+    try {
+      menuItemSchema.parse({
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        price: price,
+        category: formData.category,
+        imageUrl: formData.image_url.trim() || undefined
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     try {

@@ -50,10 +50,18 @@ export const useAnalytics = () => {
       // Calculate customer acquisition rate (new customers in last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const recentVisits = visitsRes.data?.filter(visit => 
-        new Date(visit.created_at) >= thirtyDaysAgo
-      ).length || 0;
-      const customerAcquisitionRate = recentVisits;
+      
+      // Query profiles table to count new customers
+      const { data: newCustomers, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id')
+        .gte('created_at', thirtyDaysAgo.toISOString());
+      
+      if (profilesError) {
+        console.error('Error fetching new customers:', profilesError);
+      }
+      
+      const customerAcquisitionRate = newCustomers?.length || 0;
 
       // Calculate reward redemption rate
       const totalRewards = rewardsRes.data?.length || 0;

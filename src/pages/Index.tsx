@@ -22,10 +22,17 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  // Update current role based on user's actual role
+  // Update current role based on user's actual roles
   useEffect(() => {
-    if (profile?.role) {
-      setCurrentRole(profile.role);
+    if (profile?.roles && profile.roles.length > 0) {
+      // Set to highest privilege role (admin > staff > customer)
+      if (profile.roles.includes('admin')) {
+        setCurrentRole('admin');
+      } else if (profile.roles.includes('staff')) {
+        setCurrentRole('staff');
+      } else {
+        setCurrentRole('customer');
+      }
     }
   }, [profile]);
 
@@ -45,13 +52,13 @@ const Index = () => {
   }
 
   // Only show role buttons for admin/staff users, customers only see their view
-  const roleButtons = profile?.role === 'admin' 
+  const roleButtons = profile?.roles?.includes('admin')
     ? [
         { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
         { role: 'staff' as UserRole, label: 'Staff View', icon: Users, variant: 'secondary' },
         { role: 'admin' as UserRole, label: 'Admin View', icon: Settings, variant: 'outline' }
       ]
-    : profile?.role === 'staff'
+    : profile?.roles?.includes('staff')
     ? [
         { role: 'customer' as UserRole, label: 'Customer View', icon: Crown, variant: 'default' },
         { role: 'staff' as UserRole, label: 'Staff View', icon: Users, variant: 'secondary' }
@@ -67,7 +74,7 @@ const Index = () => {
               Digital Loyalty Program
             </h1>
             <div className="flex items-center gap-3">
-              {profile?.role === 'customer' && (
+              {profile?.roles && !profile.roles.includes('admin') && (
                 <Link to="/admin-access">
                   <Button variant="ghost" size="sm" className="flex items-center gap-2">
                     <Shield className="h-4 w-4" />
@@ -87,7 +94,7 @@ const Index = () => {
           </div>
           <p className="text-xl text-muted-foreground mb-6">
             Welcome back, {profile?.full_name || user?.email}
-            {profile?.role && ` (${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)})`}
+            {profile?.roles && profile.roles.length > 0 && ` (${profile.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(', ')})`}
           </p>
           
           {/* Role Switcher - only show for staff/admin */}
@@ -108,7 +115,9 @@ const Index = () => {
           )}
           
           <Badge variant="secondary" className="text-sm">
-            {profile?.role ? `${profile.role.charAt(0).toUpperCase() + profile.role.slice(1)} Access` : 'Authenticated User Mode'}
+            {profile?.roles && profile.roles.length > 0 
+              ? `${profile.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(' & ')} Access` 
+              : 'Authenticated User Mode'}
           </Badge>
         </div>
 
