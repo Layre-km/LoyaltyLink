@@ -130,7 +130,7 @@ const Order = () => {
       orderSchema.parse({
         tableNumber: tableNumber,
         notes: notes || '',
-        items: items,
+        items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.qty })),
         total: Number(total.toFixed(2)),
       });
     } catch (validationError: any) {
