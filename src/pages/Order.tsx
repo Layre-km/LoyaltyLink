@@ -29,13 +29,25 @@ type CartItem = {
 const Order = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [tableNumber, setTableNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [placing, setPlacing] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Require authentication to place orders
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to place an order.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate, toast]);
 
   useEffect(() => {
     document.title = "Place Order | Loyalty Program";
@@ -102,6 +114,17 @@ const Order = () => {
   };
 
   const placeOrder = async () => {
+    // Ensure user is authenticated
+    if (!profile?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to place an order.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
     // Validate input using Zod schema
     try {
       orderSchema.parse({
@@ -122,8 +145,8 @@ const Order = () => {
 
     setPlacing(true);
     try {
-      // Link order to logged-in customer profile if available
-      const customerProfileId = profile?.id || null;
+      // Link order to logged-in customer profile
+      const customerProfileId = profile.id;
 
       const { error } = await supabase.from('orders').insert({
         table_number: tableNumber.trim(),
@@ -138,9 +161,7 @@ const Order = () => {
 
       toast({ 
         title: "Order placed!", 
-        description: customerProfileId 
-          ? "Your order has been sent to the staff and a visit has been logged to your account."
-          : "Your order has been sent to the staff."
+        description: "Your order has been sent to the staff and a visit has been logged to your account."
       });
       navigate('/');
     } catch (e: any) {
@@ -150,6 +171,17 @@ const Order = () => {
       setPlacing(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
