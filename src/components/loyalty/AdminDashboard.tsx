@@ -255,7 +255,7 @@ export const AdminDashboard = () => {
       </Card>
 
       {/* System Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Total Customers"
           value={systemStats?.total_customers || 0}
@@ -291,24 +291,24 @@ export const AdminDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-bronze/10 rounded-lg">
-              <div className="text-2xl font-bold text-bronze">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 bg-bronze/10 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-bronze">
                 {systemStats?.bronze_tier || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Bronze Members</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Bronze</div>
             </div>
-            <div className="text-center p-4 bg-silver/10 rounded-lg">
-              <div className="text-2xl font-bold text-silver">
+            <div className="text-center p-3 sm:p-4 bg-silver/10 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-silver">
                 {systemStats?.silver_tier || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Silver Members</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Silver</div>
             </div>
-            <div className="text-center p-4 bg-gold/10 rounded-lg">
-              <div className="text-2xl font-bold text-gold">
+            <div className="text-center p-3 sm:p-4 bg-gold/10 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-gold">
                 {systemStats?.gold_tier || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Gold Members</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Gold</div>
             </div>
           </div>
         </CardContent>
@@ -316,13 +316,13 @@ export const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="customers" className="space-y-4">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 px-4">
             <TabsList className="grid w-full grid-cols-5 min-w-[600px]">
-              <TabsTrigger value="customers" className="min-h-[44px]">Customer Management</TabsTrigger>
-              <TabsTrigger value="orders" className="min-h-[44px]">Order History</TabsTrigger>
-              <TabsTrigger value="menu" className="min-h-[44px]">Menu Management</TabsTrigger>
-              <TabsTrigger value="settings" className="min-h-[44px]">System Settings</TabsTrigger>
-              <TabsTrigger value="analytics" className="min-h-[44px]">Analytics</TabsTrigger>
+              <TabsTrigger value="customers" className="min-h-[44px] text-xs sm:text-sm">Customers</TabsTrigger>
+              <TabsTrigger value="orders" className="min-h-[44px] text-xs sm:text-sm">Orders</TabsTrigger>
+              <TabsTrigger value="menu" className="min-h-[44px] text-xs sm:text-sm">Menu</TabsTrigger>
+              <TabsTrigger value="settings" className="min-h-[44px] text-xs sm:text-sm">Settings</TabsTrigger>
+              <TabsTrigger value="analytics" className="min-h-[44px] text-xs sm:text-sm">Analytics</TabsTrigger>
             </TabsList>
           </div>
 
@@ -334,10 +334,11 @@ export const AdminDashboard = () => {
             {/* Customer List */}
             <Card>
               <CardHeader>
-                <CardTitle>Customer Management</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Customer Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="min-w-[600px] px-4 sm:px-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -379,6 +380,7 @@ export const AdminDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -387,9 +389,9 @@ export const AdminDashboard = () => {
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                   Order History
                 </CardTitle>
                 <div className="flex items-center gap-2">
@@ -398,18 +400,19 @@ export const AdminDashboard = () => {
                     placeholder="Search orders..."
                     value={orderSearchTerm}
                     onChange={(e) => setOrderSearchTerm(e.target.value)}
-                    className="w-64 min-h-[44px]"
+                    className="w-full sm:w-64 min-h-[44px]"
                   />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               {filteredOrderHistory.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground text-sm">
                   {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="min-w-[600px] px-4 sm:px-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -449,6 +452,7 @@ export const AdminDashboard = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               )}
             </CardContent>

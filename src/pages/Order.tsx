@@ -184,26 +184,26 @@ const Order = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <main className="max-w-5xl mx-auto space-y-6">
+    <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+      <main className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
         <header>
-          <h1 className="text-3xl font-bold">Place Your Order</h1>
-          <p className="text-muted-foreground mt-1">Select items and enter your table number.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Place Your Order</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Select items and enter your table number.</p>
         </header>
 
-        <section className="grid md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {/* Menu */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Menu</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Menu</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-sm text-muted-foreground">
                   Loading menu items...
                 </div>
               ) : menuItems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-sm text-muted-foreground">
                   No menu items available at the moment.
                 </div>
               ) : (
@@ -214,25 +214,25 @@ const Order = () => {
                     
                     return (
                       <div key={category}>
-                        <h3 className="font-semibold text-lg mb-3 capitalize">
+                        <h3 className="font-semibold text-base sm:text-lg mb-3 capitalize">
                           {category}s
                         </h3>
                         <div className="space-y-3">
                           {categoryItems.map((m) => (
-                            <div key={m.id} className="flex items-start justify-between gap-4 p-3 rounded-lg border">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-semibold">{m.name}</h4>
-                                  <Badge variant="secondary">${m.price.toFixed(2)}</Badge>
+                            <div key={m.id} className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 p-3 rounded-lg border">
+                              <div className="flex-1 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-semibold text-sm sm:text-base">{m.name}</h4>
+                                  <Badge variant="secondary" className="text-xs">${m.price.toFixed(2)}</Badge>
                                 </div>
                                 {m.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">{m.description}</p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{m.description}</p>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Button variant="outline" size="sm" onClick={() => updateQty(m.id, -1)}>-</Button>
+                              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                                <Button variant="outline" size="sm" onClick={() => updateQty(m.id, -1)} className="min-h-[44px] min-w-[44px]">-</Button>
                                 <span className="w-8 text-center font-semibold">{cart[m.id] || 0}</span>
-                                <Button size="sm" onClick={() => updateQty(m.id, 1)}>+</Button>
+                                <Button size="sm" onClick={() => updateQty(m.id, 1)} className="min-h-[44px] min-w-[44px]">+</Button>
                               </div>
                             </div>
                           ))}
@@ -247,14 +247,14 @@ const Order = () => {
           </Card>
 
           {/* Cart */}
-          <Card>
+          <Card className="md:sticky md:top-4 md:self-start">
             <CardHeader>
-              <CardTitle>Your Order</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Your Order</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Table Number</label>
-                <Input placeholder="e.g. A12 or 7" value={tableNumber} onChange={(e)=>setTableNumber(e.target.value)} />
+                <Input placeholder="e.g. A12 or 7" value={tableNumber} onChange={(e)=>setTableNumber(e.target.value)} className="min-h-[44px]" />
               </div>
 
               <Separator />
@@ -265,8 +265,8 @@ const Order = () => {
                 <div className="space-y-3">
                   {items.map(it => (
                     <div key={it.id} className="flex items-center justify-between text-sm">
-                      <span>{it.name} × {it.qty}</span>
-                      <span className="font-medium">${(it.price * it.qty).toFixed(2)}</span>
+                      <span className="break-words">{it.name} × {it.qty}</span>
+                      <span className="font-medium shrink-0 ml-2">${(it.price * it.qty).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -281,14 +281,14 @@ const Order = () => {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Notes (optional)</label>
-                <Input placeholder="Any special requests?" value={notes} onChange={(e)=>setNotes(e.target.value)} />
+                <Input placeholder="Any special requests?" value={notes} onChange={(e)=>setNotes(e.target.value)} className="min-h-[44px]" />
               </div>
 
-              <Button className="w-full" onClick={placeOrder} disabled={placing}>
+              <Button className="w-full min-h-[44px]" onClick={placeOrder} disabled={placing}>
                 {placing ? 'Placing...' : 'Place Order'}
               </Button>
 
-              <Button variant="ghost" className="w-full" onClick={()=>navigate('/')}>Cancel</Button>
+              <Button variant="ghost" className="w-full min-h-[44px]" onClick={()=>navigate('/')}>Cancel</Button>
             </CardContent>
           </Card>
         </section>

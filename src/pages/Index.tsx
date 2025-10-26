@@ -68,49 +68,53 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <img src={loyaltyLinkLogo} alt="LoyaltyLink" className="h-12 w-12" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img src={loyaltyLinkLogo} alt="LoyaltyLink" className="h-8 w-8 sm:h-12 sm:w-12" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 LoyaltyLink
               </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                onClick={signOut}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={signOut}
+              className="flex items-center gap-2 min-h-[44px] w-full sm:w-auto"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sm:inline">Sign Out</span>
+            </Button>
           </div>
-          <p className="text-xl text-muted-foreground mb-6">
+          <p className="text-sm sm:text-base md:text-xl text-muted-foreground mb-4 sm:mb-6 px-2">
             Welcome back, {profile?.full_name || user?.email}
-            {profile?.roles && profile.roles.length > 0 && ` (${profile.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(', ')})`}
+            {profile?.roles && profile.roles.length > 0 && (
+              <span className="block sm:inline">
+                {' '}({profile.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(', ')})
+              </span>
+            )}
           </p>
           
           {/* Role Switcher - only show for staff/admin */}
           {roleButtons.length > 0 && (
-            <div className="flex justify-center gap-4 mb-6 flex-wrap">
+            <div className="flex justify-center gap-2 sm:gap-4 mb-4 sm:mb-6 flex-wrap px-2">
               {roleButtons.map(({ role, label, icon: Icon, variant }) => (
                 <Button
                   key={role}
                   variant={currentRole === role ? "default" : variant as any}
                   onClick={() => setCurrentRole(role)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 min-h-[44px] text-xs sm:text-sm"
+                  size="sm"
                 >
-                  <Icon className="w-4 h-4" />
-                  {label}
+                  <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">{label}</span>
+                  <span className="xs:hidden">{label.split(' ')[0]}</span>
                 </Button>
               ))}
             </div>
           )}
           
-          <Badge variant="secondary" className="text-sm">
+          <Badge variant="secondary" className="text-xs sm:text-sm">
             {profile?.roles && profile.roles.length > 0 
               ? `${profile.roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(' & ')} Access` 
               : 'Authenticated User Mode'}

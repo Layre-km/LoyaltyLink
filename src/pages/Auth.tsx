@@ -106,14 +106,14 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome to Loyalty Program</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">Welcome to LoyaltyLink</CardTitle>
+          <CardDescription className="text-sm">Sign in to your account or create a new one</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="space-y-4">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin" className="min-h-[44px]">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="min-h-[44px]">Sign Up</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
@@ -127,6 +127,7 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -138,9 +139,10 @@ const Auth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="min-h-[44px]"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full min-h-[44px]" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
@@ -157,6 +159,7 @@ const Auth = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -168,6 +171,7 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -178,6 +182,7 @@ const Auth = () => {
                     placeholder="Enter your phone number (optional)"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -186,7 +191,7 @@ const Auth = () => {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className="w-full justify-start text-left font-normal min-h-[44px]"
                         type="button"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -212,6 +217,7 @@ const Auth = () => {
                     placeholder="Enter referral code (optional)"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -224,9 +230,10 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                    className="min-h-[44px]"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full min-h-[44px]" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}
                 </Button>
               </form>
@@ -235,7 +242,7 @@ const Auth = () => {
           
           {error && (
             <Alert className="mt-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-sm">{error}</AlertDescription>
             </Alert>
           )}
         </CardContent>

@@ -69,8 +69,8 @@ const AdminAccessPanel = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Admin Access Panel</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-lg sm:text-xl">Admin Access Panel</CardTitle>
+        <CardDescription className="text-sm">
           Promote users to admin or staff roles
         </CardDescription>
       </CardHeader>
@@ -85,6 +85,7 @@ const AdminAccessPanel = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="min-h-[44px]"
             />
           </div>
           
@@ -96,14 +97,15 @@ const AdminAccessPanel = () => {
               placeholder="Enter admin secret key"
               value={secretKey}
               onChange={(e) => setSecretKey(e.target.value)}
+              className="min-h-[44px]"
             />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Use: LOYALTY_ADMIN_SECRET_2024
             </p>
           </div>
           
-          <div className="flex gap-2">
-            <Button type="submit" disabled={loading} className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button type="submit" disabled={loading} className="flex-1 min-h-[44px]">
               {loading ? 'Processing...' : 'Promote to Admin'}
             </Button>
             <Button 
@@ -111,7 +113,7 @@ const AdminAccessPanel = () => {
               variant="outline" 
               onClick={handlePromoteToStaff} 
               disabled={loading || !email}
-              className="flex-1"
+              className="flex-1 min-h-[44px]"
             >
               Promote to Staff
             </Button>
@@ -120,7 +122,7 @@ const AdminAccessPanel = () => {
         
         {message && (
           <Alert className="mt-4">
-            <AlertDescription>{message}</AlertDescription>
+            <AlertDescription className="text-sm">{message}</AlertDescription>
           </Alert>
         )}
       </CardContent>

@@ -161,36 +161,36 @@ export const CustomerDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             {/* Current Tier */}
-            <div className="text-center">
+            <div className="text-center p-4 sm:p-0">
               <Badge 
-                className={`text-lg px-6 py-2 bg-${getTierColor(customerStats?.current_tier || 'bronze')} text-${getTierColor(customerStats?.current_tier || 'bronze')}-foreground`}
+                className={`text-base sm:text-lg px-4 sm:px-6 py-2 bg-${getTierColor(customerStats?.current_tier || 'bronze')} text-${getTierColor(customerStats?.current_tier || 'bronze')}-foreground`}
               >
                 {customerStats?.current_tier?.toUpperCase() || 'BRONZE'} TIER
               </Badge>
-              <p className="text-sm text-muted-foreground mt-2">Current Status</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-2">Current Status</p>
             </div>
 
             {/* Visit Count */}
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">
+            <div className="text-center p-4 sm:p-0">
+              <div className="text-2xl sm:text-3xl font-bold text-primary">
                 {customerStats?.total_visits || 0}
               </div>
-              <p className="text-sm text-muted-foreground">Total Visits</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Visits</p>
             </div>
 
             {/* Progress to Next Tier */}
-            <div className="text-center">
+            <div className="text-center p-4 sm:p-0">
               {nextTierThreshold ? (
                 <>
                   <Progress value={progressToNextTier} className="mb-2" />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {nextTierThreshold - (customerStats?.total_visits || 0)} visits to next tier
                   </p>
                 </>
               ) : (
-                <div className="text-gold font-semibold">MAX TIER REACHED! 🏆</div>
+                <div className="text-gold font-semibold text-sm sm:text-base">MAX TIER REACHED! 🏆</div>
               )}
             </div>
           </div>
@@ -214,7 +214,7 @@ export const CustomerDashboard = () => {
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Reward Wallet */}
         <Card>
           <CardHeader>
@@ -231,18 +231,18 @@ export const CustomerDashboard = () => {
                 </p>
               ) : (
                 rewards.map((reward) => (
-                  <div 
+                   <div 
                     key={reward.id}
-                    className={`p-4 rounded-lg border ${
+                    className={`p-3 sm:p-4 rounded-lg border ${
                       reward.status === 'available' 
                         ? 'border-success bg-success/5' 
                         : 'border-muted bg-muted/50'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{reward.reward_title}</h4>
-                        <p className="text-sm text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
+                      <div className="flex-1 w-full">
+                        <h4 className="font-semibold text-sm sm:text-base">{reward.reward_title}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
                           {reward.reward_description}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -251,6 +251,7 @@ export const CustomerDashboard = () => {
                       </div>
                       <Badge 
                         variant={reward.status === 'available' ? 'default' : 'secondary'}
+                        className="self-start sm:self-auto shrink-0"
                       >
                         {reward.status === 'available' ? 'Available' : 'Claimed'}
                       </Badge>
