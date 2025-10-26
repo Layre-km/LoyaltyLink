@@ -8,6 +8,7 @@ import { StaffDashboard } from "@/components/loyalty/StaffDashboard";
 import { AdminDashboard } from "@/components/loyalty/AdminDashboard";
 import { Crown, Users, Settings, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import loyaltyLinkLogo from "@/assets/loyaltylink-logo.png";
 
 type UserRole = 'customer' | 'staff' | 'admin';
 
@@ -70,18 +71,13 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digital Loyalty Program
-            </h1>
             <div className="flex items-center gap-3">
-              {profile?.roles && !profile.roles.includes('admin') && (
-                <Link to="/admin-access">
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Request Admin Access
-                  </Button>
-                </Link>
-              )}
+              <img src={loyaltyLinkLogo} alt="LoyaltyLink" className="h-12 w-12" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                LoyaltyLink
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
               <Button 
                 variant="outline" 
                 onClick={signOut}
@@ -127,6 +123,19 @@ const Index = () => {
           {currentRole === 'admin' && <AdminDashboard />}
         </div>
       </div>
+      
+      {/* Subtle admin access button - hidden in bottom right corner */}
+      {profile?.roles && !profile.roles.includes('admin') && (
+        <Link to="/admin-access">
+          <button 
+            className="fixed bottom-2 right-2 text-[10px] opacity-30 hover:opacity-50 transition-opacity px-2 py-1 text-muted-foreground"
+            title="Request Admin Access"
+          >
+            <Shield className="h-3 w-3 inline mr-1" />
+            Admin
+          </button>
+        </Link>
+      )}
     </div>
   );
 };
