@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2, Clock, Search, DollarSign, RefreshCw } from "lucide-react";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 import { MenuManagement } from "./MenuManagement";
+import { DemoDataGenerator } from "./DemoDataGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -457,43 +458,45 @@ export const AdminDashboard = () => {
           <MenuManagement />
         </TabsContent>
 
-        <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-3">Tier Thresholds</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="font-medium text-bronze">Bronze Tier</div>
-                    <div className="text-sm text-muted-foreground">0 - 9 visits</div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="font-medium text-silver">Silver Tier</div>
-                    <div className="text-sm text-muted-foreground">10 - 19 visits</div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="font-medium text-gold">Gold Tier</div>
-                    <div className="text-sm text-muted-foreground">20+ visits</div>
+        <TabsContent value="settings" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="font-semibold mb-3">Tier Thresholds</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <div className="font-medium text-bronze">Bronze Tier</div>
+                      <div className="text-sm text-muted-foreground">0 - 9 visits</div>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <div className="font-medium text-silver">Silver Tier</div>
+                      <div className="text-sm text-muted-foreground">10 - 19 visits</div>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <div className="font-medium text-gold">Gold Tier</div>
+                      <div className="text-sm text-muted-foreground">20+ visits</div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="font-semibold mb-3">Reward Settings</h4>
-                <div className="space-y-2 text-sm">
-                  <p>• Milestone rewards every 6 visits</p>
-                  <p>• Automatic tier upgrade rewards</p>
-                  <p>• Birthday rewards enabled</p>
-                  <p>• Referral rewards: 1 per successful referral</p>
+                <div>
+                  <h4 className="font-semibold mb-3">Reward Settings</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>• Milestone rewards every 6 visits</p>
+                    <p>• Automatic tier upgrade rewards</p>
+                    <p>• Birthday rewards enabled</p>
+                    <p>• Referral rewards: 1 per successful referral</p>
+                  </div>
                 </div>
-              </div>
-
-              <Button className="min-h-[44px]">Update Settings</Button>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            <DemoDataGenerator onDataGenerated={handleRefresh} />
+          </div>
         </TabsContent>
 
         <TabsContent value="analytics">
