@@ -23,6 +23,10 @@ interface Reward {
   reward_type: string;
   unlocked_at: string;
   claimed_at?: string;
+  reward_value: number | null;
+  discount_percentage: number | null;
+  expiration_date: string | null;
+  minimum_order_value: number;
 }
 
 export const CustomerDashboard = () => {
@@ -230,34 +234,61 @@ export const CustomerDashboard = () => {
                   No rewards yet. Keep visiting to unlock rewards!
                 </p>
               ) : (
-                rewards.map((reward) => (
-                   <div 
-                    key={reward.id}
-                    className={`p-3 sm:p-4 rounded-lg border ${
-                      reward.status === 'available' 
-                        ? 'border-success bg-success/5' 
-                        : 'border-muted bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
-                      <div className="flex-1 w-full">
-                        <h4 className="font-semibold text-sm sm:text-base">{reward.reward_title}</h4>
-                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
-                          {reward.reward_description}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Unlocked: {new Date(reward.unlocked_at).toLocaleDateString()}
-                        </p>
+                rewards.map((reward) => {
+                  const isExpired = reward.expiration_date && new Date(reward.expiration_date) < new Date();
+                  const isExpiringSoon = reward.expiration_date && 
+                    new Date(reward.expiration_date) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                  
+                  return (
+                    <div 
+                      key={reward.id}
+                      className={`p-3 sm:p-4 rounded-lg border ${
+                        reward.status === 'available' && !isExpired
+                          ? 'border-success bg-success/5' 
+                          : 'border-muted bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
+                        <div className="flex-1 w-full">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-semibold text-sm sm:text-base">{reward.reward_title}</h4>
+                            {reward.reward_value && (
+                              <Badge variant="default" className="text-xs">
+                                ${reward.reward_value} OFF
+                              </Badge>
+                            )}
+                            {reward.discount_percentage && (
+                              <Badge variant="default" className="text-xs">
+                                {reward.discount_percentage}% OFF
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                            {reward.reward_description}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                            <span>Unlocked: {new Date(reward.unlocked_at).toLocaleDateString()}</span>
+                            {reward.expiration_date && (
+                              <span className={isExpiringSoon && !isExpired ? 'text-warning font-medium' : ''}>
+                                • Expires: {new Date(reward.expiration_date).toLocaleDateString()}
+                                {isExpiringSoon && !isExpired && ' ⏰'}
+                              </span>
+                            )}
+                            {reward.minimum_order_value > 0 && (
+                              <span>• Min. order: ${reward.minimum_order_value.toFixed(2)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={reward.status === 'available' && !isExpired ? 'default' : 'secondary'}
+                          className="self-start sm:self-auto shrink-0"
+                        >
+                          {isExpired ? 'Expired' : reward.status === 'available' ? 'Available' : 'Claimed'}
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={reward.status === 'available' ? 'default' : 'secondary'}
-                        className="self-start sm:self-auto shrink-0"
-                      >
-                        {reward.status === 'available' ? 'Available' : 'Claimed'}
-                      </Badge>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </CardContent>

@@ -26,6 +26,17 @@ type CartItem = {
   qty: number;
 };
 
+interface Reward {
+  id: string;
+  reward_title: string;
+  reward_description: string;
+  reward_value: number | null;
+  discount_percentage: number | null;
+  minimum_order_value: number;
+  expiration_date: string | null;
+  status: 'available' | 'claimed';
+}
+
 const Order = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +47,8 @@ const Order = () => {
   const [placing, setPlacing] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [selectedReward, setSelectedReward] = useState<string | null>(null);
 
   // Require authentication to place orders
   useEffect(() => {
@@ -89,6 +102,33 @@ const Order = () => {
     }
   };
 
+  const loadRewards = async () => {
+    if (!profile?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('rewards')
+        .select('*')
+        .eq('customer_id', profile.id)
+        .eq('status', 'available')
+        .or('expiration_date.is.null,expiration_date.gt.' + new Date().toISOString())
+        .order('reward_value', { ascending: false, nullsFirst: false })
+        .order('discount_percentage', { ascending: false, nullsFirst: false });
+
+      if (error) throw error;
+
+      setRewards(data || []);
+    } catch (error: any) {
+      console.error('Error loading rewards:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (profile) {
+      loadRewards();
+    }
+  }, [profile]);
+
   const items: CartItem[] = useMemo(() => {
     return Object.entries(cart)
       .filter(([, qty]) => qty > 0)
@@ -98,10 +138,32 @@ const Order = () => {
       });
   }, [cart, menuItems]);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.price * it.qty, 0),
     [items]
   );
+
+  const selectedRewardData = useMemo(
+    () => rewards.find(r => r.id === selectedReward),
+    [selectedReward, rewards]
+  );
+
+  const { discount, total } = useMemo(() => {
+    let discountAmount = 0;
+    
+    if (selectedRewardData && subtotal >= selectedRewardData.minimum_order_value) {
+      if (selectedRewardData.reward_value) {
+        discountAmount = Math.min(selectedRewardData.reward_value, subtotal);
+      } else if (selectedRewardData.discount_percentage) {
+        discountAmount = Math.round(subtotal * selectedRewardData.discount_percentage) / 100;
+      }
+    }
+    
+    return {
+      discount: discountAmount,
+      total: Math.max(0, subtotal - discountAmount)
+    };
+  }, [subtotal, selectedRewardData]);
 
   const updateQty = (id: string, delta: number) => {
     setCart(prev => {
@@ -132,6 +194,9 @@ const Order = () => {
         notes: notes || '',
         items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.qty })),
         total: Number(total.toFixed(2)),
+        appliedRewardId: selectedReward || undefined,
+        discountAmount: discount > 0 ? Number(discount.toFixed(2)) : undefined,
+        originalAmount: discount > 0 ? Number(subtotal.toFixed(2)) : undefined
       });
     } catch (validationError: any) {
       const errorMessage = validationError.errors?.[0]?.message || "Invalid order data";
@@ -154,14 +219,18 @@ const Order = () => {
         items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price })),
         total_amount: Number(total.toFixed(2)),
         notes: notes.trim() || null,
-        customer_profile_id: customerProfileId
+        customer_profile_id: customerProfileId,
+        applied_reward_id: selectedReward || null,
+        discount_amount: discount > 0 ? Number(discount.toFixed(2)) : 0,
+        original_amount: discount > 0 ? Number(subtotal.toFixed(2)) : null
       });
       
       if (error) throw error;
 
+      const savedAmount = discount > 0 ? ` You saved $${discount.toFixed(2)}!` : '';
       toast({ 
         title: "Order placed!", 
-        description: "Your order has been sent to the staff and a visit has been logged to your account."
+        description: `Your order has been sent to the staff and a visit has been logged to your account.${savedAmount}`
       });
       navigate('/');
     } catch (e: any) {
@@ -190,6 +259,63 @@ const Order = () => {
           <h1 className="text-2xl sm:text-3xl font-bold">Place Your Order</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Select items and enter your table number.</p>
         </header>
+
+        {/* Available Rewards */}
+        {rewards.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Available Rewards</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {rewards.map((reward) => {
+                  const meetsMinimum = subtotal >= reward.minimum_order_value;
+                  const isSelected = selectedReward === reward.id;
+                  
+                  return (
+                    <button
+                      key={reward.id}
+                      onClick={() => setSelectedReward(isSelected ? null : reward.id)}
+                      disabled={!meetsMinimum}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        isSelected 
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary' 
+                          : meetsMinimum
+                          ? 'border-border hover:border-primary hover:bg-primary/5'
+                          : 'border-muted bg-muted/50 opacity-60 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="font-semibold text-sm">{reward.reward_title}</h4>
+                        {reward.reward_value && (
+                          <Badge variant={isSelected ? "default" : "secondary"} className="shrink-0 text-xs">
+                            ${reward.reward_value}
+                          </Badge>
+                        )}
+                        {reward.discount_percentage && (
+                          <Badge variant={isSelected ? "default" : "secondary"} className="shrink-0 text-xs">
+                            {reward.discount_percentage}% OFF
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{reward.reward_description}</p>
+                      {!meetsMinimum && reward.minimum_order_value > 0 && (
+                        <p className="text-xs text-destructive mt-1">
+                          Min. order: ${reward.minimum_order_value.toFixed(2)}
+                        </p>
+                      )}
+                      {reward.expiration_date && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Expires: {new Date(reward.expiration_date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {/* Menu */}
@@ -274,9 +400,30 @@ const Order = () => {
 
               <Separator />
 
+              {discount > 0 && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-success">Discount ({selectedRewardData?.reward_title})</span>
+                    <span className="text-success font-medium">-${discount.toFixed(2)}</span>
+                  </div>
+                  {total === 0 && (
+                    <Badge variant="default" className="w-full justify-center text-base py-2">
+                      🎉 FREE 🎉
+                    </Badge>
+                  )}
+                  <Separator />
+                </>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total</span>
-                <span className="text-lg font-bold">${total.toFixed(2)}</span>
+                <span className={`text-lg font-bold ${discount > 0 ? 'text-success' : ''}`}>
+                  ${total.toFixed(2)}
+                </span>
               </div>
 
               <div className="space-y-2">

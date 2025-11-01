@@ -21,7 +21,11 @@ export const orderSchema = z.object({
   
   total: z.number()
     .positive({ message: "Total must be positive" })
-    .max(999999.99, { message: "Total amount is too large" })
+    .max(999999.99, { message: "Total amount is too large" }),
+  
+  appliedRewardId: z.string().uuid().optional(),
+  discountAmount: z.number().min(0).optional(),
+  originalAmount: z.number().positive().optional()
 });
 
 // Customer registration validation schema

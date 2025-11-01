@@ -90,39 +90,56 @@ export type Database = {
       }
       orders: {
         Row: {
+          applied_reward_id: string | null
           created_at: string
           customer_profile_id: string | null
           delivered_at: string | null
+          discount_amount: number | null
           id: string
           items: Json
           notes: string | null
+          original_amount: number | null
           status: string
           table_number: string
           total_amount: number
         }
         Insert: {
+          applied_reward_id?: string | null
           created_at?: string
           customer_profile_id?: string | null
           delivered_at?: string | null
+          discount_amount?: number | null
           id?: string
           items: Json
           notes?: string | null
+          original_amount?: number | null
           status?: string
           table_number: string
           total_amount: number
         }
         Update: {
+          applied_reward_id?: string | null
           created_at?: string
           customer_profile_id?: string | null
           delivered_at?: string | null
+          discount_amount?: number | null
           id?: string
           items?: Json
           notes?: string | null
+          original_amount?: number | null
           status?: string
           table_number?: string
           total_amount?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_applied_reward_id_fkey"
+            columns: ["applied_reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -210,51 +227,76 @@ export type Database = {
       }
       rewards: {
         Row: {
+          applicable_to: string | null
+          applied_to_order_id: string | null
           claimed_at: string | null
           claimed_by_staff_id: string | null
           created_at: string
           customer_id: string
+          discount_percentage: number | null
+          expiration_date: string | null
           id: string
           is_birthday_reward: boolean
           is_referral_reward: boolean
           milestone_visits: number | null
+          minimum_order_value: number | null
           reward_description: string | null
           reward_title: string
           reward_type: string
+          reward_value: number | null
           status: Database["public"]["Enums"]["reward_status"]
           unlocked_at: string
         }
         Insert: {
+          applicable_to?: string | null
+          applied_to_order_id?: string | null
           claimed_at?: string | null
           claimed_by_staff_id?: string | null
           created_at?: string
           customer_id: string
+          discount_percentage?: number | null
+          expiration_date?: string | null
           id?: string
           is_birthday_reward?: boolean
           is_referral_reward?: boolean
           milestone_visits?: number | null
+          minimum_order_value?: number | null
           reward_description?: string | null
           reward_title: string
           reward_type: string
+          reward_value?: number | null
           status?: Database["public"]["Enums"]["reward_status"]
           unlocked_at?: string
         }
         Update: {
+          applicable_to?: string | null
+          applied_to_order_id?: string | null
           claimed_at?: string | null
           claimed_by_staff_id?: string | null
           created_at?: string
           customer_id?: string
+          discount_percentage?: number | null
+          expiration_date?: string | null
           id?: string
           is_birthday_reward?: boolean
           is_referral_reward?: boolean
           milestone_visits?: number | null
+          minimum_order_value?: number | null
           reward_description?: string | null
           reward_title?: string
           reward_type?: string
+          reward_value?: number | null
           status?: Database["public"]["Enums"]["reward_status"]
           unlocked_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rewards_applied_to_order_id_fkey"
+            columns: ["applied_to_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rewards_claimed_by_staff_id_fkey"
             columns: ["claimed_by_staff_id"]
@@ -339,6 +381,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_reward_to_order: {
+        Args: { _order_items: Json; _order_total: number; _reward_id: string }
+        Returns: {
+          discount_amount: number
+          error_message: string
+        }[]
+      }
       check_milestone_rewards: {
         Args: { customer_profile_id: string }
         Returns: undefined

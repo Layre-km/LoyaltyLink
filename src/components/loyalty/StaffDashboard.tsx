@@ -20,16 +20,7 @@ interface Customer {
     current_tier: string;
   };
 }
-interface Reward {
-  id: string;
-  reward_title: string;
-  reward_description?: string;
-  status: 'available' | 'claimed';
-  customer_id: string;
-  customer?: {
-    full_name: string;
-  };
-}
+
 interface Order {
   id: string;
   table_number: string;
@@ -44,12 +35,14 @@ interface Order {
   status: string;
   notes?: string;
   delivered_at?: string;
+  applied_reward_id?: string;
+  discount_amount?: number;
+  original_amount?: number;
 }
 export const StaffDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [visitNotes, setVisitNotes] = useState("");
-  const [pendingRewards, setPendingRewards] = useState<Reward[]>([]);
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
@@ -60,10 +53,10 @@ export const StaffDashboard = () => {
     profile
   } = useAuth();
   useEffect(() => {
-    loadPendingRewards();
+    loadActiveOrders();
   }, []);
   const refreshAll = async () => {
-    await Promise.all([loadPendingRewards(), loadActiveOrders()]);
+    await loadActiveOrders();
   };
   const {
     pullDistance,
@@ -73,28 +66,6 @@ export const StaffDashboard = () => {
     onRefresh: refreshAll,
     disabled: false
   });
-  const loadPendingRewards = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('rewards').select(`
-          *,
-          customer:profiles!rewards_customer_id_fkey (
-            full_name
-          )
-        `).eq('status', 'available').order('unlocked_at', {
-        ascending: false
-      });
-      if (error) {
-        console.error('Error fetching rewards:', error);
-      } else {
-        setPendingRewards(data || []);
-      }
-    } catch (error) {
-      console.error('Error loading rewards:', error);
-    }
-  };
   const searchCustomers = async () => {
     if (!searchTerm.trim()) {
       toast({
@@ -196,7 +167,6 @@ export const StaffDashboard = () => {
         stats: newStats
       });
       setVisitNotes("");
-      loadPendingRewards(); // Refresh rewards in case new ones were created
 
       toast({
         title: "Visit logged successfully",
@@ -211,46 +181,6 @@ export const StaffDashboard = () => {
       });
     } finally {
       setIsLoggingVisit(false);
-    }
-  };
-  const validateReward = async (rewardId: string) => {
-    if (!profile) {
-      toast({
-        title: "Authentication required",
-        description: "You must be logged in to validate rewards.",
-        variant: "destructive"
-      });
-      return;
-    }
-    try {
-      const {
-        error
-      } = await supabase.from('rewards').update({
-        status: 'claimed',
-        claimed_at: new Date().toISOString(),
-        claimed_by_staff_id: profile.id
-      }).eq('id', rewardId);
-      if (error) {
-        throw error;
-      }
-
-      // Update local state
-      setPendingRewards(prev => prev.map(reward => reward.id === rewardId ? {
-        ...reward,
-        status: 'claimed' as const
-      } : reward));
-      const reward = pendingRewards.find(r => r.id === rewardId);
-      toast({
-        title: "Reward validated",
-        description: `Reward claimed for ${reward?.customer?.full_name}`
-      });
-    } catch (error: any) {
-      console.error('Error validating reward:', error);
-      toast({
-        title: "Error validating reward",
-        description: error.message || "Please try again.",
-        variant: "destructive"
-      });
     }
   };
   const loadActiveOrders = async () => {
@@ -408,9 +338,32 @@ export const StaffDashboard = () => {
                       {order.notes && <p className="text-xs text-muted-foreground mt-2 italic">
                           Note: {order.notes}
                         </p>}
+                      {order.applied_reward_id && order.discount_amount && (
+                        <div className="mt-3 p-2 bg-success/10 border border-success rounded">
+                          <p className="text-xs text-success font-medium">
+                            🎉 Reward Applied: ${order.discount_amount.toFixed(2)} discount
+                          </p>
+                          {order.original_amount && (
+                            <p className="text-xs text-muted-foreground">
+                              Original: ${order.original_amount.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="font-bold text-lg mb-2">${order.total_amount.toFixed(2)}</div>
+                      {order.discount_amount && order.discount_amount > 0 ? (
+                        <>
+                          <div className="text-sm text-muted-foreground line-through mb-1">
+                            ${order.original_amount?.toFixed(2)}
+                          </div>
+                          <div className="font-bold text-lg text-success mb-2">
+                            ${order.total_amount.toFixed(2)}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="font-bold text-lg mb-2">${order.total_amount.toFixed(2)}</div>
+                      )}
                       <div className="flex flex-col gap-2">
                         {order.status === 'pending' && <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')} disabled={updatingOrder === order.id} className="min-h-[44px]">
                             {updatingOrder === order.id ? 'Starting...' : 'Start Order'}
@@ -426,10 +379,8 @@ export const StaffDashboard = () => {
         </CardContent>
       </Card>
 
-      
-
       {/* Add New Customer */}
-      <CustomerRegistrationForm onCustomerAdded={loadPendingRewards} />
+      <CustomerRegistrationForm onCustomerAdded={refreshAll} />
 
       {/* Recent Activities */}
       <Card>
