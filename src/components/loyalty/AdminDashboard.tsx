@@ -124,7 +124,7 @@ export const AdminDashboard = () => {
             total_visits,
             current_tier
           ),
-          visits (
+          visits!customer_id (
             visit_date
           )
         `)
