@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Settings, Users, BarChart3, Gift, Calendar, TrendingUp, Loader2, Clock, Search, DollarSign, RefreshCw } from "lucide-react";
 import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 import { MenuManagement } from "./MenuManagement";
-import { DemoDataGenerator } from "./DemoDataGenerator";
+import { SystemConfiguration } from "./SystemConfiguration";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -17,10 +17,17 @@ interface CustomerData {
   id: string;
   full_name: string;
   email: string;
+  phone_number: string | null;
+  date_of_birth: string | null;
   total_visits: number;
   current_tier: string;
   joined_date: string;
   last_visit: string;
+  referral_code: string;
+  referred_by_code: string | null;
+  total_spent: number;
+  available_rewards: number;
+  claimed_rewards: number;
 }
 
 interface SystemStats {
@@ -101,13 +108,17 @@ export const AdminDashboard = () => {
         gold_tier: tierCounts.gold
       });
 
-      // Load customer list with stats
+      // Load customer list with comprehensive stats
       const { data: customersData, error: customersError } = await supabase
         .from('profiles')
         .select(`
           id,
           full_name,
           email,
+          phone_number,
+          date_of_birth,
+          referral_code,
+          referred_by_code,
           created_at,
           customer_stats (
             total_visits,
@@ -123,17 +134,51 @@ export const AdminDashboard = () => {
 
       if (customersError) throw customersError;
 
-      const formattedCustomers: CustomerData[] = customersData?.map(customer => ({
-        id: customer.id,
-        full_name: customer.full_name,
-        email: customer.email,
-        total_visits: customer.customer_stats?.[0]?.total_visits || 0,
-        current_tier: customer.customer_stats?.[0]?.current_tier || 'bronze',
-        joined_date: new Date(customer.created_at).toISOString().split('T')[0],
-        last_visit: customer.visits?.[0]?.visit_date 
-          ? new Date(customer.visits[0].visit_date).toISOString().split('T')[0]
-          : 'Never'
-      })) || [];
+      // Calculate total spent and rewards for each customer
+      const formattedCustomers: CustomerData[] = await Promise.all(
+        (customersData || []).map(async (customer) => {
+          // Get total spent from orders
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('total_amount')
+            .eq('customer_profile_id', customer.id)
+            .eq('status', 'delivered');
+
+          const totalSpent = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+
+          // Get reward counts
+          const { data: availableRewards } = await supabase
+            .from('rewards')
+            .select('id')
+            .eq('customer_id', customer.id)
+            .eq('status', 'available');
+
+          const { data: claimedRewards } = await supabase
+            .from('rewards')
+            .select('id')
+            .eq('customer_id', customer.id)
+            .eq('status', 'claimed');
+
+          return {
+            id: customer.id,
+            full_name: customer.full_name,
+            email: customer.email,
+            phone_number: customer.phone_number,
+            date_of_birth: customer.date_of_birth,
+            total_visits: customer.customer_stats?.[0]?.total_visits || 0,
+            current_tier: customer.customer_stats?.[0]?.current_tier || 'bronze',
+            joined_date: new Date(customer.created_at).toISOString().split('T')[0],
+            last_visit: customer.visits?.[0]?.visit_date 
+              ? new Date(customer.visits[0].visit_date).toISOString().split('T')[0]
+              : 'Never',
+            referral_code: customer.referral_code,
+            referred_by_code: customer.referred_by_code,
+            total_spent: totalSpent,
+            available_rewards: availableRewards?.length || 0,
+            claimed_rewards: claimedRewards?.length || 0,
+          };
+        })
+      );
 
       setCustomers(formattedCustomers);
     } catch (error: any) {
@@ -338,16 +383,21 @@ export const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <div className="min-w-[600px] px-4 sm:px-0">
+                  <div className="min-w-[1200px] px-4 sm:px-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[150px]">Customer</TableHead>
                         <TableHead className="min-w-[200px]">Email</TableHead>
+                        <TableHead className="min-w-[120px]">Phone</TableHead>
+                        <TableHead>DOB</TableHead>
                         <TableHead>Visits</TableHead>
                         <TableHead>Tier</TableHead>
+                        <TableHead>Total Spent</TableHead>
+                        <TableHead>Rewards</TableHead>
+                        <TableHead>Referral Code</TableHead>
+                        <TableHead className="min-w-[120px]">Joined</TableHead>
                         <TableHead className="min-w-[120px]">Last Visit</TableHead>
-                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -356,7 +406,16 @@ export const AdminDashboard = () => {
                           <TableCell className="font-medium">
                             {customer.full_name}
                           </TableCell>
-                          <TableCell>{customer.email}</TableCell>
+                          <TableCell className="text-sm">{customer.email}</TableCell>
+                          <TableCell className="text-sm">
+                            {customer.phone_number || '-'}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {customer.date_of_birth 
+                              ? new Date(customer.date_of_birth).toLocaleDateString() 
+                              : '-'
+                            }
+                          </TableCell>
                           <TableCell>{customer.total_visits}</TableCell>
                           <TableCell>
                             <Badge 
@@ -365,16 +424,29 @@ export const AdminDashboard = () => {
                               {customer.current_tier.toUpperCase()}
                             </Badge>
                           </TableCell>
+                          <TableCell className="font-semibold">
+                            ${customer.total_spent.toFixed(2)}
+                          </TableCell>
                           <TableCell>
+                            <div className="text-sm">
+                              <span className="text-green-600">{customer.available_rewards}</span>
+                              {' / '}
+                              <span className="text-muted-foreground">{customer.claimed_rewards}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                              {customer.referral_code}
+                            </code>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {new Date(customer.joined_date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-sm">
                             {customer.last_visit === 'Never' 
                               ? 'Never' 
                               : new Date(customer.last_visit).toLocaleDateString()
                             }
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" className="min-h-[44px]">
-                              View Details
-                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -463,44 +535,7 @@ export const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h4 className="font-semibold mb-3">Tier Thresholds</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <div className="font-medium text-bronze">Bronze Tier</div>
-                      <div className="text-sm text-muted-foreground">0 - 9 visits</div>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <div className="font-medium text-silver">Silver Tier</div>
-                      <div className="text-sm text-muted-foreground">10 - 19 visits</div>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <div className="font-medium text-gold">Gold Tier</div>
-                      <div className="text-sm text-muted-foreground">20+ visits</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">Reward Settings</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>• Milestone rewards every 6 visits</p>
-                    <p>• Automatic tier upgrade rewards</p>
-                    <p>• Birthday rewards enabled</p>
-                    <p>• Referral rewards: 1 per successful referral</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <DemoDataGenerator onDataGenerated={handleRefresh} />
-          </div>
+          <SystemConfiguration />
         </TabsContent>
 
         <TabsContent value="analytics">
