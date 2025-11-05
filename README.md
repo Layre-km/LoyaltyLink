@@ -1,73 +1,45 @@
-# Welcome to your Lovable project
+# LoyaltyLink: A Web-Based Visit-Tracking Loyalty Program for the F&B Industry
+# Project Overview
 
-## Project info
+This project is a web-based loyalty system designed for restaurants and cafés. It allows business owners to reward customers based on visit frequency rather than points, helping improve customer retention and engagement.
 
-**URL**: https://lovable.dev/projects/f99b630e-ac14-407b-af47-0ceab58c018c
+The system includes:
+A Customer Panel for registration & login, order placement, visit history, and reward progress.
+An Admin Dashboard for managing customers, tracking visits, viewing rewards, and redeeming offers manually.
 
-## How can I edit this code?
+# Technologies Used
+React (TypeScript)
+Vite
+Tailwind CSS
+shadcn/ui
+Supabase (Authentication & Database)
+Node.js and npm
 
-There are several ways of editing your application.
+Setup Instructions
+# 1. Clone the repository
+git clone <YOUR_REPOSITORY_URL>
 
-**Use Lovable**
+# 2. Navigate to the project folder
+cd LoyaltyLink
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f99b630e-ac14-407b-af47-0ceab58c018c) and start prompting.
+# 3. Install dependencies
+npm install
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Run the development server
 npm run dev
-```
+Then open http://localhost:5173 in your browser.
 
-**Edit a file directly in GitHub**
+Deployment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+To build for production:
+npm run build
 
-**Use GitHub Codespaces**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The generated files will be available in the dist/ folder.
+You can deploy these files on any static hosting service such as Vercel, Netlify, or Supabase Hosting.
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/f99b630e-ac14-407b-af47-0ceab58c018c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Author
+Layre Kiane Alberto Munguambe
+Bachelor of Computer Science (Hons) in Cybersecurity
+SEGi University, Malaysia
+Final Year Project – 2025
