@@ -29,8 +29,7 @@ npm install
 npm run dev
 Then open http://localhost:5173 in your browser.
 
-Deployment
-
+# Deployment
 To build for production:
 npm run build
 
@@ -40,6 +39,9 @@ You can deploy these files on any static hosting service such as Vercel, Netlify
 
 # Author
 Layre Kiane Alberto Munguambe
+
 Bachelor of Computer Science (Hons) in Cybersecurity
+
 SEGi University, Malaysia
+
 Final Year Project – 2025
