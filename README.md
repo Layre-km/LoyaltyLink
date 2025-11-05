@@ -17,7 +17,7 @@ Node.js and npm
 
 Setup Instructions
 # 1. Clone the repository
-git clone <YOUR_REPOSITORY_URL>
+git clone <https://github.com/Layre-km/LoyaltyLink>
 
 # 2. Navigate to the project folder
 cd LoyaltyLink
