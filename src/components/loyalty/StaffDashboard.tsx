@@ -45,6 +45,8 @@ export const StaffDashboard = () => {
   const [visitNotes, setVisitNotes] = useState("");
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
   const {
     toast
@@ -54,9 +56,10 @@ export const StaffDashboard = () => {
   } = useAuth();
   useEffect(() => {
     loadActiveOrders();
+    loadOrderHistory();
   }, []);
   const refreshAll = async () => {
-    await loadActiveOrders();
+    await Promise.all([loadActiveOrders(), loadOrderHistory()]);
   };
   const {
     pullDistance,
@@ -210,6 +213,34 @@ export const StaffDashboard = () => {
       }
     } catch (error) {
       console.error('Error loading orders:', error);
+    }
+  };
+
+  const loadOrderHistory = async () => {
+    try {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'delivered')
+        .lt('delivered_at', oneHourAgo.toISOString())
+        .order('delivered_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setOrderHistory((data || []).map(order => ({
+        ...order,
+        items: order.items as any
+      })));
+    } catch (error: any) {
+      console.error('Error loading order history:', error);
+      toast({
+        title: "Error loading order history",
+        description: error.message || "Could not load order history.",
+        variant: "destructive"
+      });
     }
   };
   const updateOrderStatus = async (orderId: string, newStatus: 'preparing' | 'delivered') => {
@@ -382,10 +413,83 @@ export const StaffDashboard = () => {
       {/* Add New Customer */}
       <CustomerRegistrationForm onCustomerAdded={refreshAll} />
 
-      {/* Recent Activities */}
+      {/* Order History */}
       <Card>
-        
-        
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Order History
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders..."
+                value={orderSearchTerm}
+                onChange={(e) => setOrderSearchTerm(e.target.value)}
+                className="w-full sm:w-64 min-h-[44px]"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {orderHistory.filter(order => {
+            if (!orderSearchTerm.trim()) return true;
+            const searchLower = orderSearchTerm.toLowerCase();
+            return (
+              order.table_number.toLowerCase().includes(searchLower) ||
+              order.items.some(item => item.name.toLowerCase().includes(searchLower)) ||
+              order.total_amount.toString().includes(searchLower)
+            );
+          }).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orderHistory.filter(order => {
+                if (!orderSearchTerm.trim()) return true;
+                const searchLower = orderSearchTerm.toLowerCase();
+                return (
+                  order.table_number.toLowerCase().includes(searchLower) ||
+                  order.items.some(item => item.name.toLowerCase().includes(searchLower)) ||
+                  order.total_amount.toString().includes(searchLower)
+                );
+              }).map((order) => (
+                <div key={order.id} className="p-4 border rounded-lg">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">Table {order.table_number}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.delivered_at || order.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>{item.name} × {item.qty}</span>
+                            <span>${(item.price * item.qty).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {order.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">
+                          Note: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-bold text-lg">
+                        ${order.total_amount.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>;
 };

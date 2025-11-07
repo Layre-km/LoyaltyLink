@@ -56,8 +56,42 @@ export const AdminDashboard = () => {
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [revenueTimeframe, setRevenueTimeframe] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const { toast } = useToast();
-  const analytics = useAnalytics();
+
+  // Calculate date range based on timeframe
+  const getDateRange = () => {
+    const now = new Date();
+    let startDate: Date | undefined;
+    let endDate: Date | undefined = now;
+
+    switch (revenueTimeframe) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'custom':
+        if (customStartDate) startDate = new Date(customStartDate);
+        if (customEndDate) endDate = new Date(customEndDate);
+        break;
+      case 'all':
+      default:
+        startDate = undefined;
+        endDate = undefined;
+    }
+
+    return { startDate, endDate };
+  };
+
+  const { startDate, endDate } = getDateRange();
+  const analytics = useAnalytics(startDate, endDate);
 
   useEffect(() => {
     loadSystemData();
@@ -299,6 +333,85 @@ export const AdminDashboard = () => {
         </CardContent>
       </Card>
 
+      {/* Revenue Timeframe Filter */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Revenue Timeframe
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={revenueTimeframe === 'today' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRevenueTimeframe('today')}
+                className="min-h-[44px]"
+              >
+                Today
+              </Button>
+              <Button
+                variant={revenueTimeframe === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRevenueTimeframe('week')}
+                className="min-h-[44px]"
+              >
+                Last 7 Days
+              </Button>
+              <Button
+                variant={revenueTimeframe === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRevenueTimeframe('month')}
+                className="min-h-[44px]"
+              >
+                Last 30 Days
+              </Button>
+              <Button
+                variant={revenueTimeframe === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRevenueTimeframe('all')}
+                className="min-h-[44px]"
+              >
+                All Time
+              </Button>
+              <Button
+                variant={revenueTimeframe === 'custom' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRevenueTimeframe('custom')}
+                className="min-h-[44px]"
+              >
+                Custom
+              </Button>
+            </div>
+
+            {revenueTimeframe === 'custom' && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground">Start Date</label>
+                  <Input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="min-h-[44px]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground">End Date</label>
+                  <Input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="min-h-[44px]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* System Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
@@ -308,10 +421,16 @@ export const AdminDashboard = () => {
           description="Active loyalty members"
         />
         <StatCard
-          title="Total Revenue"
+          title={`Revenue (${
+            revenueTimeframe === 'today' ? 'Today' :
+            revenueTimeframe === 'week' ? 'Last 7 Days' :
+            revenueTimeframe === 'month' ? 'Last 30 Days' :
+            revenueTimeframe === 'custom' ? 'Custom Range' :
+            'All Time'
+          })`}
           value={`$${analytics.totalRevenue.toFixed(2)}`}
           icon={DollarSign}
-          description="From all orders"
+          description={analytics.loading ? "Loading..." : "From delivered orders"}
         />
         <StatCard
           title="Avg Visits/Customer"

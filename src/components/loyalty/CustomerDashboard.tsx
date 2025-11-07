@@ -29,9 +29,26 @@ interface Reward {
   minimum_order_value: number;
 }
 
+interface PopularItem {
+  name: string;
+  count: number;
+}
+
+interface LastOrder {
+  id: string;
+  table_number: string;
+  items: { id: string; name: string; qty: number; price: number }[];
+  total_amount: number;
+  delivered_at: string;
+  discount_amount?: number;
+  original_amount?: number;
+}
+
 export const CustomerDashboard = () => {
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
+  const [popularItems, setPopularItems] = useState<PopularItem[]>([]);
+  const [lastOrder, setLastOrder] = useState<LastOrder | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -78,6 +95,46 @@ export const CustomerDashboard = () => {
         });
       } else {
         setRewards(rewardsData || []);
+      }
+
+      // Fetch popular menu items from all delivered orders
+      const { data: allOrders, error: ordersError } = await supabase
+        .from('orders')
+        .select('items')
+        .eq('status', 'delivered');
+
+      if (!ordersError && allOrders) {
+        const itemCounts: Record<string, number> = {};
+        allOrders.forEach(order => {
+          const items = order.items as any[];
+          items?.forEach(item => {
+            itemCounts[item.name] = (itemCounts[item.name] || 0) + item.qty;
+          });
+        });
+        
+        const topItems = Object.entries(itemCounts)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3);
+        
+        setPopularItems(topItems);
+      }
+
+      // Fetch customer's last order
+      const { data: lastOrderData, error: lastOrderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_profile_id', profile.id)
+        .eq('status', 'delivered')
+        .order('delivered_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!lastOrderError && lastOrderData) {
+        setLastOrder({
+          ...lastOrderData,
+          items: lastOrderData.items as any
+        });
       }
     } catch (error) {
       console.error('Error loading customer data:', error);
@@ -217,6 +274,96 @@ export const CustomerDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Popular Items & Last Order */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Popular Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🔥 Customer Favorites
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {popularItems.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4 text-sm">
+                No popular items data yet
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {popularItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="font-medium text-sm">
+                      {idx + 1}. {item.name}
+                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      {item.count} orders
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Last Order */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📦 Your Last Order
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!lastOrder ? (
+              <p className="text-muted-foreground text-center py-4 text-sm">
+                No order history yet
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant="outline">Table {lastOrder.table_number}</Badge>
+                  <span>•</span>
+                  <span>{new Date(lastOrder.delivered_at).toLocaleDateString()}</span>
+                  <span>{new Date(lastOrder.delivered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                
+                <div className="space-y-2">
+                  {lastOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.name} × {item.qty}</span>
+                      <span className="font-medium">${(item.price * item.qty).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-3 border-t">
+                  {lastOrder.discount_amount && lastOrder.discount_amount > 0 ? (
+                    <>
+                      <div className="flex justify-between text-sm text-muted-foreground line-through mb-1">
+                        <span>Original:</span>
+                        <span>${lastOrder.original_amount?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-success mb-1">
+                        <span>Reward Applied:</span>
+                        <span>-${lastOrder.discount_amount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold">
+                        <span>Total:</span>
+                        <span>${lastOrder.total_amount.toFixed(2)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between font-semibold">
+                      <span>Total:</span>
+                      <span>${lastOrder.total_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Reward Wallet */}

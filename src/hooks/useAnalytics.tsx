@@ -11,7 +11,7 @@ interface AnalyticsData {
   error: string | null;
 }
 
-export const useAnalytics = () => {
+export const useAnalytics = (startDate?: Date, endDate?: Date) => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     avgVisitsPerCustomer: 0,
     totalRevenue: 0,
@@ -22,17 +22,30 @@ export const useAnalytics = () => {
     error: null
   });
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = async (customStartDate?: Date, customEndDate?: Date) => {
+    const effectiveStartDate = customStartDate || startDate;
+    const effectiveEndDate = customEndDate || endDate;
     setAnalytics(prev => ({ ...prev, loading: true, error: null }));
     
     try {
       // Get total customers and total visits for average
-      const [customersRes, visitsRes, ordersRes, rewardsRes] = await Promise.all([
+      const [customersRes, visitsRes, rewardsRes] = await Promise.all([
         supabase.from('customer_stats').select('total_visits'),
         supabase.from('visits').select('id, created_at'),
-        supabase.from('orders').select('total_amount, items'),
         supabase.from('rewards').select('status')
       ]);
+
+      // Build orders query with date filtering
+      let ordersQuery = supabase.from('orders').select('total_amount, items').eq('status', 'delivered');
+      
+      if (effectiveStartDate) {
+        ordersQuery = ordersQuery.gte('delivered_at', effectiveStartDate.toISOString());
+      }
+      if (effectiveEndDate) {
+        ordersQuery = ordersQuery.lte('delivered_at', effectiveEndDate.toISOString());
+      }
+      
+      const ordersRes = await ordersQuery;
 
       if (customersRes.error) throw customersRes.error;
       if (visitsRes.error) throw visitsRes.error;
@@ -103,7 +116,7 @@ export const useAnalytics = () => {
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [startDate, endDate]);
 
   return { ...analytics, refresh: loadAnalytics };
 };
