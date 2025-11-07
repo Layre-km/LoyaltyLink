@@ -47,6 +47,8 @@ interface OrderHistory {
   created_at: string;
   delivered_at: string;
   notes?: string;
+  customer_profile_id?: string;
+  profiles?: { full_name: string };
 }
 
 export const AdminDashboard = () => {
@@ -243,7 +245,7 @@ export const AdminDashboard = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, profiles!customer_profile_id(full_name)')
         .eq('status', 'delivered')
         .lt('delivered_at', oneHourAgo.toISOString())
         .order('delivered_at', { ascending: false })
@@ -253,7 +255,10 @@ export const AdminDashboard = () => {
 
       setOrderHistory((data || []).map(order => ({
         ...order,
-        items: order.items as any // Cast JSONB to expected type
+        items: order.items as any, // Cast JSONB to expected type
+        profiles: Array.isArray(order.profiles) && order.profiles.length > 0 
+          ? order.profiles[0] 
+          : undefined
       })));
     } catch (error: any) {
       console.error('Error loading order history:', error);
@@ -602,49 +607,53 @@ export const AdminDashboard = () => {
                   {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <div className="min-w-[600px] px-4 sm:px-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Table</TableHead>
-                        <TableHead className="min-w-[200px]">Items</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead className="min-w-[150px]">Delivered</TableHead>
-                        <TableHead>Notes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredOrderHistory.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>
-                            <Badge variant="outline">{order.table_number}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm space-y-1">
-                              {order.items.map((item, idx) => (
-                                <div key={idx} className="flex justify-between">
-                                  <span>{item.name} × {item.qty}</span>
-                                  <span>${(item.price * item.qty).toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            ${order.total_amount.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {new Date(order.delivered_at).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {order.notes || '-'}
-                          </TableCell>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="min-w-[600px] px-4 sm:px-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Table</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead className="min-w-[200px]">Items</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead className="min-w-[150px]">Delivered</TableHead>
+                          <TableHead>Notes</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrderHistory.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell>
+                              <Badge variant="outline">{order.table_number}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {order.profiles?.full_name || 'Guest'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm space-y-1">
+                                {order.items.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>{item.name} × {item.qty}</span>
+                                    <span>${(item.price * item.qty).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              ${order.total_amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {new Date(order.delivered_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {order.notes || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    </div>
                   </div>
-                </div>
               )}
             </CardContent>
           </Card>

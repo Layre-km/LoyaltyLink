@@ -38,6 +38,8 @@ interface Order {
   applied_reward_id?: string;
   discount_amount?: number;
   original_amount?: number;
+  customer_profile_id?: string;
+  profiles?: { full_name: string };
 }
 export const StaffDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -222,7 +224,7 @@ export const StaffDashboard = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, profiles!customer_profile_id(full_name)')
         .eq('status', 'delivered')
         .lt('delivered_at', oneHourAgo.toISOString())
         .order('delivered_at', { ascending: false })
@@ -232,7 +234,10 @@ export const StaffDashboard = () => {
 
       setOrderHistory((data || []).map(order => ({
         ...order,
-        items: order.items as any
+        items: order.items as any,
+        profiles: Array.isArray(order.profiles) && order.profiles.length > 0 
+          ? order.profiles[0] 
+          : undefined
       })));
     } catch (error: any) {
       console.error('Error loading order history:', error);
@@ -459,8 +464,12 @@ export const StaffDashboard = () => {
                 <div key={order.id} className="p-4 border rounded-lg">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Badge variant="outline">Table {order.table_number}</Badge>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs font-medium">
+                          {order.profiles?.full_name || 'Guest'}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(order.delivered_at || order.created_at).toLocaleString()}
                         </span>
