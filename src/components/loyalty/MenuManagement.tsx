@@ -397,7 +397,7 @@ export const MenuManagement = () => {
                     {item.category}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium">${item.price.toFixed(2)}</TableCell>
+                <TableCell className="font-medium">RM{item.price.toFixed(2)}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Switch

@@ -368,7 +368,7 @@ export const StaffDashboard = () => {
                       <div className="text-sm space-y-1">
                         {(order.items || []).map((item, idx) => <div key={idx} className="flex justify-between">
                             <span>{item.name} × {item.qty}</span>
-                            <span>${(item.price * item.qty).toFixed(2)}</span>
+                      <span>RM{(item.price * item.qty).toFixed(2)}</span>
                           </div>)}
                       </div>
                       {order.notes && <p className="text-xs text-muted-foreground mt-2 italic">
@@ -377,11 +377,11 @@ export const StaffDashboard = () => {
                       {order.applied_reward_id && order.discount_amount && (
                         <div className="mt-3 p-2 bg-success/10 border border-success rounded">
                           <p className="text-xs text-success font-medium">
-                            🎉 Reward Applied: ${order.discount_amount.toFixed(2)} discount
+                            🎉 Reward Applied: RM{order.discount_amount.toFixed(2)} discount
                           </p>
                           {order.original_amount && (
                             <p className="text-xs text-muted-foreground">
-                              Original: ${order.original_amount.toFixed(2)}
+                              Original: RM{order.original_amount.toFixed(2)}
                             </p>
                           )}
                         </div>
@@ -391,14 +391,14 @@ export const StaffDashboard = () => {
                       {order.discount_amount && order.discount_amount > 0 ? (
                         <>
                           <div className="text-sm text-muted-foreground line-through mb-1">
-                            ${order.original_amount?.toFixed(2)}
+                            RM{order.original_amount?.toFixed(2)}
                           </div>
                           <div className="font-bold text-lg text-success mb-2">
-                            ${order.total_amount.toFixed(2)}
+                            RM{order.total_amount.toFixed(2)}
                           </div>
                         </>
                       ) : (
-                        <div className="font-bold text-lg mb-2">${order.total_amount.toFixed(2)}</div>
+                        <div className="font-bold text-lg mb-2">RM{order.total_amount.toFixed(2)}</div>
                       )}
                       <div className="flex flex-col gap-2">
                         {order.status === 'pending' && <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')} disabled={updatingOrder === order.id} className="min-h-[44px]">
@@ -478,7 +478,7 @@ export const StaffDashboard = () => {
                         {order.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between">
                             <span>{item.name} × {item.qty}</span>
-                            <span>${(item.price * item.qty).toFixed(2)}</span>
+                            <span>RM{(item.price * item.qty).toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
@@ -490,7 +490,7 @@ export const StaffDashboard = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="font-bold text-lg">
-                        ${order.total_amount.toFixed(2)}
+                        RM{order.total_amount.toFixed(2)}
                       </div>
                     </div>
                   </div>

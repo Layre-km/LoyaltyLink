@@ -227,8 +227,8 @@ const Order = () => {
       
       if (error) throw error;
 
-      const savedAmount = discount > 0 ? ` You saved $${discount.toFixed(2)}!` : '';
-      toast({ 
+      const savedAmount = discount > 0 ? ` You saved RM${discount.toFixed(2)}!` : '';
+      toast({
         title: "Order placed!", 
         description: `Your order has been sent to the staff and a visit has been logged to your account.${savedAmount}`
       });
@@ -289,7 +289,7 @@ const Order = () => {
                         <h4 className="font-semibold text-sm">{reward.reward_title}</h4>
                         {reward.reward_value && (
                           <Badge variant={isSelected ? "default" : "secondary"} className="shrink-0 text-xs">
-                            ${reward.reward_value}
+                            RM{reward.reward_value}
                           </Badge>
                         )}
                         {reward.discount_percentage && (
@@ -301,7 +301,7 @@ const Order = () => {
                       <p className="text-xs text-muted-foreground line-clamp-2">{reward.reward_description}</p>
                       {!meetsMinimum && reward.minimum_order_value > 0 && (
                         <p className="text-xs text-destructive mt-1">
-                          Min. order: ${reward.minimum_order_value.toFixed(2)}
+                          Min. order: RM{reward.minimum_order_value.toFixed(2)}
                         </p>
                       )}
                       {reward.expiration_date && (
@@ -349,7 +349,7 @@ const Order = () => {
                               <div className="flex-1 w-full sm:w-auto">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h4 className="font-semibold text-sm sm:text-base">{m.name}</h4>
-                                  <Badge variant="secondary" className="text-xs">${m.price.toFixed(2)}</Badge>
+                                  <Badge variant="secondary" className="text-xs">RM{m.price.toFixed(2)}</Badge>
                                 </div>
                                 {m.description && (
                                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">{m.description}</p>
@@ -392,7 +392,7 @@ const Order = () => {
                   {items.map(it => (
                     <div key={it.id} className="flex items-center justify-between text-sm">
                       <span className="break-words">{it.name} × {it.qty}</span>
-                      <span className="font-medium shrink-0 ml-2">${(it.price * it.qty).toFixed(2)}</span>
+                      <span className="font-medium shrink-0 ml-2">RM{(it.price * it.qty).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -404,11 +404,11 @@ const Order = () => {
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>RM{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-success">Discount ({selectedRewardData?.reward_title})</span>
-                    <span className="text-success font-medium">-${discount.toFixed(2)}</span>
+                    <span className="text-success font-medium">-RM{discount.toFixed(2)}</span>
                   </div>
                   {total === 0 && (
                     <Badge variant="default" className="w-full justify-center text-base py-2">
@@ -422,7 +422,7 @@ const Order = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total</span>
                 <span className={`text-lg font-bold ${discount > 0 ? 'text-success' : ''}`}>
-                  ${total.toFixed(2)}
+                  RM{total.toFixed(2)}
                 </span>
               </div>
 

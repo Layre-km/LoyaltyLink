@@ -331,7 +331,7 @@ export const CustomerDashboard = () => {
                   {lastOrder.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span>{item.name} × {item.qty}</span>
-                      <span className="font-medium">${(item.price * item.qty).toFixed(2)}</span>
+                      <span className="font-medium">RM{(item.price * item.qty).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -341,21 +341,21 @@ export const CustomerDashboard = () => {
                     <>
                       <div className="flex justify-between text-sm text-muted-foreground line-through mb-1">
                         <span>Original:</span>
-                        <span>${lastOrder.original_amount?.toFixed(2)}</span>
+                        <span>RM{lastOrder.original_amount?.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-success mb-1">
                         <span>Reward Applied:</span>
-                        <span>-${lastOrder.discount_amount.toFixed(2)}</span>
+                        <span>-RM{lastOrder.discount_amount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between font-semibold">
                         <span>Total:</span>
-                        <span>${lastOrder.total_amount.toFixed(2)}</span>
+                        <span>RM{lastOrder.total_amount.toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
                     <div className="flex justify-between font-semibold">
                       <span>Total:</span>
-                      <span>${lastOrder.total_amount.toFixed(2)}</span>
+                      <span>RM{lastOrder.total_amount.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -401,7 +401,7 @@ export const CustomerDashboard = () => {
                             <h4 className="font-semibold text-sm sm:text-base">{reward.reward_title}</h4>
                             {reward.reward_value && (
                               <Badge variant="default" className="text-xs">
-                                ${reward.reward_value} OFF
+                                RM{reward.reward_value} OFF
                               </Badge>
                             )}
                             {reward.discount_percentage && (
@@ -422,7 +422,7 @@ export const CustomerDashboard = () => {
                               </span>
                             )}
                             {reward.minimum_order_value > 0 && (
-                              <span>• Min. order: ${reward.minimum_order_value.toFixed(2)}</span>
+                              <span>• Min. order: RM{reward.minimum_order_value.toFixed(2)}</span>
                             )}
                           </div>
                         </div>

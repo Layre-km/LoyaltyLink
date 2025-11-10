@@ -433,7 +433,7 @@ export const AdminDashboard = () => {
             revenueTimeframe === 'custom' ? 'Custom Range' :
             'All Time'
           })`}
-          value={`$${analytics.totalRevenue.toFixed(2)}`}
+          value={`RM${analytics.totalRevenue.toFixed(2)}`}
           icon={DollarSign}
           description={analytics.loading ? "Loading..." : "From delivered orders"}
         />
@@ -549,7 +549,7 @@ export const AdminDashboard = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-semibold">
-                            ${customer.total_spent.toFixed(2)}
+                            RM{customer.total_spent.toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
@@ -634,13 +634,13 @@ export const AdminDashboard = () => {
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="flex justify-between">
                                     <span>{item.name} × {item.qty}</span>
-                                    <span>${(item.price * item.qty).toFixed(2)}</span>
+                                    <span>RM{(item.price * item.qty).toFixed(2)}</span>
                                   </div>
                                 ))}
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold">
-                              ${order.total_amount.toFixed(2)}
+                              RM{order.total_amount.toFixed(2)}
                             </TableCell>
                             <TableCell className="text-sm">
                               {new Date(order.delivered_at).toLocaleString()}
@@ -698,7 +698,7 @@ export const AdminDashboard = () => {
                     <div>
                       <h4 className="font-semibold mb-3">Revenue & Orders</h4>
                       <div className="space-y-2 text-sm">
-                        <p>• Total revenue: <strong>${analytics.totalRevenue.toFixed(2)}</strong></p>
+                        <p>• Total revenue: <strong>RM{analytics.totalRevenue.toFixed(2)}</strong></p>
                         <p>• Popular menu items below</p>
                       </div>
                     </div>
