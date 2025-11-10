@@ -255,11 +255,8 @@ export const AdminDashboard = () => {
 
       setOrderHistory((data || []).map(order => ({
         ...order,
-        items: order.items as any, // Cast JSONB to expected type
-        profiles: Array.isArray(order.profiles) && order.profiles.length > 0 
-          ? order.profiles[0] 
-          : undefined
-      })));
+        items: order.items as any // Cast JSONB to expected type
+      })) as any);
     } catch (error: any) {
       console.error('Error loading order history:', error);
       toast({
