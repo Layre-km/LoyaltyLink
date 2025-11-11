@@ -20,6 +20,12 @@ interface SignUpData {
   referralCode?: string;
 }
 
+interface UpdateProfileData {
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -29,6 +35,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: UpdateProfileData) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -150,6 +157,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const updateProfile = async (data: UpdateProfileData) => {
+    try {
+      if (!user) {
+        return { error: { message: 'No user logged in' } };
+      }
+
+      // Check if email is changing
+      const emailChanged = data.email !== profile?.email;
+
+      // Update email in Supabase Auth if changed
+      if (emailChanged) {
+        const { error: authError } = await supabase.auth.updateUser({
+          email: data.email,
+        });
+        
+        if (authError) {
+          console.error('Error updating email:', authError);
+          return { error: authError };
+        }
+      }
+
+      // Update profile data in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.fullName,
+          phone_number: data.phoneNumber || null,
+          email: data.email,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+        return { error: profileError };
+      }
+
+      // Refresh profile data
+      await refreshProfile();
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -159,6 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signIn,
     signOut,
     refreshProfile,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

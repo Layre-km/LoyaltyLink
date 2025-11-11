@@ -139,6 +139,28 @@ export const signInSchema = z.object({
     .nonempty({ message: "Password is required" })
 });
 
+// Profile update validation schema
+export const profileUpdateSchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, { message: "Full name must be at least 2 characters" })
+    .max(100, { message: "Full name must be less than 100 characters" })
+    .regex(/^[a-zA-Z\s'-]+$/, { message: "Full name can only contain letters, spaces, hyphens, and apostrophes" }),
+  
+  email: z.string()
+    .trim()
+    .email({ message: "Invalid email address" })
+    .max(255, { message: "Email must be less than 255 characters" }),
+  
+  phoneNumber: z.string()
+    .trim()
+    .regex(/^[0-9+\-\s()]+$/, { message: "Invalid phone number format" })
+    .min(7, { message: "Phone number must be at least 7 digits" })
+    .max(20, { message: "Phone number must be less than 20 characters" })
+    .optional()
+    .or(z.literal(''))
+});
+
 // Sanitization helper functions
 export const sanitizeHtml = (text: string): string => {
   return text

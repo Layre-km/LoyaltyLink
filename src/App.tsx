@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Order from "./pages/Order";
 import Auth from "./pages/Auth";
 import AdminAccess from "./pages/AdminAccess";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<ErrorBoundary><Auth /></ErrorBoundary>} />
                 <Route path="/admin-access" element={<ErrorBoundary><AdminAccess /></ErrorBoundary>} />
+                <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
                 <Route path="/" element={<ErrorBoundary><Index /></ErrorBoundary>} />
                 <Route path="/order" element={<ErrorBoundary><Order /></ErrorBoundary>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

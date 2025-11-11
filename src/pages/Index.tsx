@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CustomerDashboard } from "@/components/loyalty/CustomerDashboard";
 import { StaffDashboard } from "@/components/loyalty/StaffDashboard";
 import { AdminDashboard } from "@/components/loyalty/AdminDashboard";
-import { Crown, Users, Settings, LogOut, Shield } from "lucide-react";
+import { Crown, Users, Settings, LogOut, Shield, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import loyaltyLinkLogo from "@/assets/loyaltylink-logo.png";
 
@@ -77,14 +77,24 @@ const Index = () => {
                 LoyaltyLink
               </h1>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={signOut}
-              className="flex items-center gap-2 min-h-[44px] w-full sm:w-auto"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sm:inline">Sign Out</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-2 min-h-[44px]"
+              >
+                <UserCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Profile</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={signOut}
+                className="flex items-center gap-2 min-h-[44px]"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            </div>
           </div>
           <p className="text-sm sm:text-base md:text-xl text-muted-foreground mb-4 sm:mb-6 px-2">
             Welcome back, {profile?.full_name || user?.email}
