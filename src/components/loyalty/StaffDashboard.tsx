@@ -224,7 +224,7 @@ export const StaffDashboard = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, profiles(full_name)')
         .eq('status', 'delivered')
         .lt('delivered_at', oneHourAgo.toISOString())
         .order('delivered_at', { ascending: false })

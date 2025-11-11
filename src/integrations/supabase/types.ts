@@ -139,6 +139,13 @@ export type Database = {
             referencedRelation: "rewards"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_customer_profile_id_fkey"
+            columns: ["customer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
