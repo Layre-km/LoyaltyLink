@@ -245,7 +245,7 @@ export const AdminDashboard = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select('*, profiles(full_name)')
+        .select('*, profiles!orders_customer_profile_id_fkey(full_name)')
         .eq('status', 'delivered')
         .lt('delivered_at', oneHourAgo.toISOString())
         .order('delivered_at', { ascending: false })
