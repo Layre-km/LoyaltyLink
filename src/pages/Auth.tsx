@@ -276,10 +276,15 @@ const Auth = () => {
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
+                        captionLayout="dropdown"
                         selected={dateOfBirth}
                         onSelect={setDateOfBirth}
-                        initialFocus
                         disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
+                        defaultMonth={new Date(2000, 0)}
+                        className="pointer-events-auto"
+                        initialFocus
                       />
                     </PopoverContent>
                   </Popover>
