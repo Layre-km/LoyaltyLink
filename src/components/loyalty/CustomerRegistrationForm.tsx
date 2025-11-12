@@ -148,7 +148,94 @@ export const CustomerRegistrationForm = ({
     }
   };
   return <Card>
-      
-      
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserPlus className="h-5 w-5" />
+          Register New Customer
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full Name *</Label>
+            <Input
+              id="full_name"
+              value={formData.full_name}
+              onChange={(e) => handleInputChange("full_name", e.target.value)}
+              placeholder="John Doe"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              placeholder="john@example.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone_number">Phone Number *</Label>
+            <Input
+              id="phone_number"
+              type="tel"
+              value={formData.phone_number}
+              onChange={(e) => handleInputChange("phone_number", e.target.value)}
+              placeholder="+1234567890"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Birthday (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !birthday && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {birthday ? format(birthday, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={birthday}
+                  onSelect={setBirthday}
+                  disabled={(date) => date > new Date()}
+                  fromYear={1900}
+                  toYear={new Date().getFullYear()}
+                  defaultMonth={new Date(2000, 0)}
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="referred_by_code">Referral Code (Optional)</Label>
+            <Input
+              id="referred_by_code"
+              value={formData.referred_by_code}
+              onChange={(e) => handleInputChange("referred_by_code", e.target.value)}
+              placeholder="Enter referral code"
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Registering..." : "Register Customer"}
+          </Button>
+        </form>
+      </CardContent>
     </Card>;
 };
