@@ -161,6 +161,25 @@ export const profileUpdateSchema = z.object({
     .or(z.literal(''))
 });
 
+// Password reset validation
+export const passwordResetSchema = z.object({
+  email: z.string()
+    .trim()
+    .email({ message: "Please enter a valid email address" })
+    .max(255, { message: "Email must be less than 255 characters" }),
+});
+
+// New password validation
+export const newPasswordSchema = z.object({
+  password: z.string()
+    .min(6, { message: "Password must be at least 6 characters" })
+    .max(100, { message: "Password must be less than 100 characters" }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 // Sanitization helper functions
 export const sanitizeHtml = (text: string): string => {
   return text

@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect } from 'react';
-import { signInSchema, signUpSchema } from '@/lib/validations';
+import { signInSchema, signUpSchema, passwordResetSchema } from '@/lib/validations';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
@@ -24,8 +25,11 @@ const Auth = () => {
   const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -102,6 +106,44 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    
+    // Validate email
+    try {
+      passwordResetSchema.parse({ email: resetEmail });
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Invalid email";
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setResetLoading(false);
+      return;
+    }
+    
+    const { error } = await resetPassword(resetEmail);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset link",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "If an account exists with this email, you'll receive a password reset link. Check your spam folder if you don't see it.",
+      });
+      setShowForgotPassword(false);
+      setResetEmail('');
+    }
+    
+    setResetLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-4">
       <Card className="w-full max-w-md">
@@ -145,6 +187,39 @@ const Auth = () => {
                 <Button type="submit" className="w-full min-h-[44px]" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                
+                <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+                  <DialogTrigger asChild>
+                    <Button variant="link" className="w-full" type="button">
+                      Forgot Password?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reset Your Password</DialogTitle>
+                      <DialogDescription>
+                        Enter your email address and we'll send you a link to reset your password. The link will expire in 1 hour.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                          className="min-h-[44px]"
+                        />
+                      </div>
+                      <Button type="submit" className="w-full min-h-[44px]" disabled={resetLoading}>
+                        {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </form>
             </TabsContent>
             

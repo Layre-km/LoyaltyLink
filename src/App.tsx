@@ -11,6 +11,7 @@ import Order from "./pages/Order";
 import Auth from "./pages/Auth";
 import AdminAccess from "./pages/AdminAccess";
 import Profile from "./pages/Profile";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <ErrorBoundary>
               <Routes>
                 <Route path="/auth" element={<ErrorBoundary><Auth /></ErrorBoundary>} />
+                <Route path="/reset-password" element={<ErrorBoundary><ResetPassword /></ErrorBoundary>} />
                 <Route path="/admin-access" element={<ErrorBoundary><AdminAccess /></ErrorBoundary>} />
                 <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
                 <Route path="/" element={<ErrorBoundary><Index /></ErrorBoundary>} />
