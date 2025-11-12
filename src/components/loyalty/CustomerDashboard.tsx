@@ -51,6 +51,7 @@ export const CustomerDashboard = () => {
   const [lastOrder, setLastOrder] = useState<LastOrder | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tierThresholds, setTierThresholds] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -66,6 +67,17 @@ export const CustomerDashboard = () => {
     
     setLoading(true);
     try {
+      // Fetch tier thresholds from system settings
+      const { data: settingsData } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'tier_thresholds')
+        .single();
+      
+      if (settingsData) {
+        setTierThresholds(settingsData.setting_value);
+      }
+
       // Fetch customer stats
       const { data: statsData, error: statsError } = await supabase
         .from('customer_stats')
@@ -163,11 +175,26 @@ export const CustomerDashboard = () => {
   };
 
   const getNextTierThreshold = (currentTier: string) => {
+    if (!tierThresholds) {
+      // Fallback to defaults if thresholds not loaded yet
+      switch (currentTier) {
+        case 'bronze': return 10;
+        case 'silver': return 20;
+        case 'gold': return null;
+        default: return 10;
+      }
+    }
+
+    // Use dynamic thresholds from database
     switch (currentTier) {
-      case 'bronze': return 10;
-      case 'silver': return 20;
-      case 'gold': return null;
-      default: return 10;
+      case 'bronze': 
+        return tierThresholds.silver?.min || 10;
+      case 'silver': 
+        return tierThresholds.gold?.min || 20;
+      case 'gold': 
+        return null;
+      default: 
+        return tierThresholds.silver?.min || 10;
     }
   };
 
