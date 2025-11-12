@@ -273,7 +273,7 @@ const Auth = () => {
                         {dateOfBirth ? format(dateOfBirth, "PPP") : "Select your birthdate (optional)"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="center">
                       <Calendar
                         mode="single"
                         captionLayout="dropdown"
