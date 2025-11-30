@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Plus, Check, Clock, User, ShoppingCart, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CustomerRegistrationForm } from "./CustomerRegistrationForm";
 import { useAuth } from "@/hooks/useAuth";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 interface Customer {
@@ -411,9 +410,6 @@ export const StaffDashboard = () => {
             </div>}
         </CardContent>
       </Card>
-
-      {/* Add New Customer */}
-      <CustomerRegistrationForm onCustomerAdded={refreshAll} />
 
       {/* Order History */}
       <Card>
