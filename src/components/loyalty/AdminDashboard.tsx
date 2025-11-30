@@ -577,6 +577,83 @@ export const AdminDashboard = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Order History
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search orders..."
+                    value={orderSearchTerm}
+                    onChange={(e) => setOrderSearchTerm(e.target.value)}
+                    className="w-full sm:w-64 min-h-[44px]"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredOrderHistory.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  {orderSearchTerm ? 'No orders match your search.' : 'No completed orders to display.'}
+                </div>
+              ) : (
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="min-w-[600px] px-4 sm:px-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Table</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead className="min-w-[200px]">Items</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead className="min-w-[150px]">Delivered</TableHead>
+                          <TableHead>Notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrderHistory.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell>
+                              <Badge variant="outline">{order.table_number}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {order.profiles?.full_name || 'Guest'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm space-y-1">
+                                {order.items.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>{item.name} × {item.qty}</span>
+                                    <span>RM{(item.price * item.qty).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              RM{order.total_amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {new Date(order.delivered_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {order.notes || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    </div>
+                  </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="menu">
           <MenuManagement />
         </TabsContent>
